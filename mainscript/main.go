@@ -4,15 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"runtime"
 
 	"github.com/gonum/blas/cblas"
 	"github.com/gonum/blas/dbw"
 
 	"github.com/gonum/matrix/mat64"
 
-	"ransuq"
-	"ransuq/settings"
-	"runtime"
+	"github.com/btracey/ransuq"
+	"github.com/btracey/ransuq/settings"
 )
 
 func main() {
