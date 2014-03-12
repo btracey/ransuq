@@ -1,8 +1,9 @@
 package settings
 
 import (
-	"ransuq"
 	"sort"
+
+	"github.com/btracey/ransuq"
 
 	"github.com/reggo/reggo/loss"
 	"github.com/reggo/reggo/scale"

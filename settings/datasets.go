@@ -9,8 +9,8 @@ import (
 	"github.com/btracey/su2tools/driver"
 	"github.com/btracey/su2tools/nondimensionalize"
 
-	"ransuq"
-	"ransuq/datawrapper"
+	"github.com/btracey/ransuq"
+	"github.com/btracey/ransuq/datawrapper"
 )
 
 var gopath string

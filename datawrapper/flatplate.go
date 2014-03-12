@@ -11,7 +11,8 @@ import (
 	"strings"
 
 	"github.com/btracey/ransuq/dataloader"
-	"github.com/btracey/ransuq/mldriver"
+	//"github.com/btracey/ransuq/mldriver"
+
 	"github.com/btracey/su2tools/driver"
 
 	"code.google.com/p/plotinum/plot"
@@ -54,7 +55,17 @@ func flatplateCompare(drivers []*driver.Driver, resultLocation string) error {
 	fields := mapInputs(inputNames)
 
 	// Load in the data
-	datasets := mldriver.ConstructDataloaders(drivers)
+
+	datasets := make([]*dataloader.Dataset, len(drivers))
+	for i, drive := range drivers {
+		datasets[i] = &dataloader.Dataset{
+			Name:     drive.Name,
+			Filename: drive.Fullpath(drive.Options.SolutionFlowFilename),
+			Format:   &dataloader.SU2_restart_2dturb{},
+		}
+	}
+
+	//datasets := mldriver.ConstructDataloaders(drivers)
 	data, err := dataloader.Load(inputNames, datasets)
 	if err != nil {
 		return err

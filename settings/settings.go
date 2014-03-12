@@ -4,7 +4,7 @@ import (
 	"errors"
 	"path/filepath"
 
-	"ransuq"
+	"github.com/btracey/ransuq"
 )
 
 // GetSettings returns a populated settings structure for the given options

@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"ransuq"
-	"ransuq/dataloader"
+
+	"github.com/btracey/ransuq"
+	"github.com/btracey/ransuq/dataloader"
 
 	"github.com/btracey/su2tools/config"
 	"github.com/btracey/su2tools/driver"
+
 	"github.com/reggo/reggo/common"
 
 	"github.com/gonum/matrix/mat64"
