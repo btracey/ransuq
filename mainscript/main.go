@@ -38,7 +38,7 @@ func main() {
 
 	runtime.GOMAXPROCS(nCpu)
 	mat64.Register(goblas.Blas{})
-	dbw.Register(golas.Blas{})
+	dbw.Register(goblas.Blas{})
 
 	var caller driver.SU2Syscaller
 	// Get the SU2Caller
@@ -48,7 +48,7 @@ func main() {
 	case "serial":
 		caller = driver.Serial{true}
 	case "cluster":
-		driver.Cluster{4, true}
+		caller = driver.Cluster{4, true}
 	}
 
 	set, err := settings.GetSettings(
