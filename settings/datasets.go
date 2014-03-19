@@ -1,6 +1,7 @@
 package settings
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/datawrapper"
+	"github.com/btracey/ransuq/synthetic"
 )
 
 var gopath string
@@ -30,22 +32,31 @@ func init() {
 
 //
 func init() {
-	sortedDatasets = append(sortedDatasets, SingleFlatplate)
-	sortedDatasets = append(sortedDatasets, NoDataset)
-
+	sortedDatasets = append(sortedDatasets,
+		NoDataset,
+		SingleFlatplate,
+		MultiFlatplate,
+		FlatplateSweep,
+		SyntheticFlatplateProduction,
+		SingleRae,
+	)
 	sort.Strings(sortedDatasets)
 }
 
 var sortedDatasets []string
 
 const (
-	SingleFlatplate = "single_flatplate"
-	MultiFlatplate  = "multi_flatplate"
-	FlatplateSweep  = "flatplate_sweep"
-	NoDataset       = "none"
+	NoDataset                    = "none"
+	SingleFlatplate              = "single_flatplate"
+	MultiFlatplate               = "multi_flatplate"
+	FlatplateSweep               = "flatplate_sweep"
+	SyntheticFlatplateProduction = "synth_flat_prod"
+	SingleRae                    = "single_rae"
 )
 
-func GetDatasets(data string) ([]ransuq.Dataset, error) {
+func GetDatasets(data string, caller driver.SU2Syscaller) ([]ransuq.Dataset, error) {
+	var datasets []ransuq.Dataset
+
 	switch data {
 	default:
 		return nil, Missing{
@@ -53,15 +64,28 @@ func GetDatasets(data string) ([]ransuq.Dataset, error) {
 			Options: sortedDatasets,
 		}
 	case "none":
-		return []ransuq.Dataset{}, nil
+		datasets = []ransuq.Dataset{}
 	case SingleFlatplate:
 		dataset := newFlatplate(5e6, "med")
-		return []ransuq.Dataset{dataset}, nil
+		datasets = []ransuq.Dataset{dataset}
 	case MultiFlatplate:
-		return []ransuq.Dataset{newFlatplate(3e6, "med"), newFlatplate(5e6, "med"), newFlatplate(7e6, "med")}, nil
+		datasets = []ransuq.Dataset{newFlatplate(3e6, "med"), newFlatplate(5e6, "med"), newFlatplate(7e6, "med")}
 	case FlatplateSweep:
-		return []ransuq.Dataset{newFlatplate(3e6, "med"), newFlatplate(4e6, "med"), newFlatplate(5e6, "med"), newFlatplate(6e6, "med"), newFlatplate(7e6, "med")}, nil
+		datasets = []ransuq.Dataset{newFlatplate(3e6, "med"), newFlatplate(4e6, "med"), newFlatplate(5e6, "med"), newFlatplate(6e6, "med"), newFlatplate(7e6, "med")}
+	case SyntheticFlatplateProduction:
+		datasets = []ransuq.Dataset{synthetic.Production{synthetic.FlatplateBounds}}
+	case SingleRae:
+		datasets = []ransuq.Dataset{newAirfoil()}
 	}
+
+	for _, dataset := range datasets {
+		su2, ok := dataset.(*datawrapper.SU2)
+		if ok {
+			fmt.Println("in setting syscaller")
+			su2.SetSyscaller(caller)
+		}
+	}
+	return datasets, nil
 }
 
 type FlatplateDataset struct {
@@ -138,6 +162,55 @@ func newFlatplate(re float64, fidelity string) ransuq.Dataset {
 	default:
 		panic("bad fidelity")
 	}
+
+	// Create an SU2 datawrapper from it
+	return &datawrapper.SU2{
+		Driver:      drive,
+		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
+		IgnoreNames: []string{"YLoc"},
+		IgnoreFunc:  func(d []float64) bool { return d[0] < 1e-10 },
+		Name:        name,
+		ComparisonPostprocessor: datawrapper.FlatplatePostprocessor{},
+	}
+}
+
+func newAirfoil() ransuq.Dataset {
+	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "rae")
+	configName := "turb_SA_RAE2822.cfg"
+	meshName := "mesh_RAE2822_turb.su2"
+	baseconfig := filepath.Join(basepath, "testcase", configName)
+	meshFile := filepath.Join(basepath, "testcase", meshName)
+
+	fmt.Println("base config is", baseconfig)
+
+	name := "Rae_Base"
+
+	wd := filepath.Join(basepath, "RAE")
+
+	// Create the driver
+	drive := &driver.Driver{
+		Name:      name,
+		Config:    configName,
+		Wd:        wd,
+		FancyName: "RAE Base",
+		Stdout:    name + "_log.txt",
+	}
+
+	// Set the base config options to be those
+	err := drive.SetRelativeOptions(baseconfig, false, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// set mesh file to be the base mesh file
+	drive.Options.MeshFilename = meshFile
+	drive.Options.KindTurbModel = "ML"
+	drive.Options.MlTurbModelFile = "none"
+	drive.Options.MlTurbModelFeatureset = "SA"
+	drive.Options.ExtraOutput = true
+	drive.OptionList["MlTurbModelFile"] = true
+	drive.OptionList["MlTurbModelFeatureset"] = true
+	drive.OptionList["ExtraOutput"] = true
 
 	// Create an SU2 datawrapper from it
 	return &datawrapper.SU2{

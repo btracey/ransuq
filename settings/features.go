@@ -17,6 +17,7 @@ const (
 	NondimProduction      = "nondim_production"
 	Production            = "production"
 	NondimProductionLog   = "nondim_production_log"
+	Destruction            = "destruction"
 	NondimDestruction     = "nondim_destruction"
 	NondimCrossProduction = "nondim_crossproduction"
 	NondimSource          = "nondim_source"
@@ -43,6 +44,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case NondimDestruction:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"NondimDestruction"}
+	case Destruction:
+		inputs = []string{"Chi", "OmegaBar", "SourceNondimer"}
+		outputs = []string{"Destruction"}
 	case NondimCrossProduction:
 		inputs = []string{"Chi", "NuGradMagBar"}
 		outputs = []string{"NondimCrossProduction"}

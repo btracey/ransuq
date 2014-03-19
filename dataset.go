@@ -61,6 +61,9 @@ func GenerateData(datasets []Generatable) []error {
 		f := func(g Generatable, i int) {
 
 			err := g.Run()
+			if err != nil {
+				panic(err)
+			}
 			errs[i] = err
 
 			// See if it's a post-processor, and if so, run

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/btracey/ransuq"
+	"github.com/btracey/su2tools/driver"
 )
 
 // GetSettings returns a populated settings structure for the given options
@@ -15,14 +16,15 @@ func GetSettings(
 	weightSet,
 	algorithm,
 	trainSettings string,
+	caller driver.SU2Syscaller,
 ) (*ransuq.Settings, error) {
 	// Get the training data sets
-	trainingData, err := GetDatasets(training)
+	trainingData, err := GetDatasets(training, caller)
 	if err != nil {
 		return nil, errors.New("training " + err.Error())
 	}
 
-	testingData, err := GetDatasets(testing)
+	testingData, err := GetDatasets(testing, caller)
 	if err != nil {
 		return nil, errors.New("testing " + err.Error())
 	}

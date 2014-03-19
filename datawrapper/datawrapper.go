@@ -20,11 +20,12 @@ import (
 
 // SU2 is a type for loading SU2 data and running SU2 Cases
 type SU2 struct {
-	Driver      *driver.Driver
-	Su2Caller   driver.SU2Syscaller
-	IgnoreNames []string
-	IgnoreFunc  func([]float64) bool
-	Name        string
+	Driver                  *driver.Driver
+	Su2Caller               driver.SU2Syscaller
+	IgnoreNames             []string
+	IgnoreFunc              func([]float64) bool
+	Name                    string
+	ComparisonPostprocessor Postprocessor
 }
 
 func (su *SU2) ID() string {
@@ -126,7 +127,9 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 	// Now, change the turbulence model to SA, and add the json file
 	mlDriver.Options.KindTurbModel = "ML"
 	mlDriver.Options.MlTurbModelFile = algfile
+	mlDriver.Options.ExtraOutput = true
 	mlDriver.OptionList["MlTurbModelFile"] = true
+	mlDriver.OptionList["ExtraOutput"] = true
 	mlDriver.Options.ExtIter = 9999.0
 	mlDriver.Options.MlTurbModelFeatureset = featureSet
 
@@ -138,20 +141,36 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 			IgnoreFunc:  su.IgnoreFunc,
 			Name:        newName,
 		},
-		OrigDriver: su.Driver,
-		SaveDir:    newDir,
+		OrigDriver:              su.Driver,
+		SaveDir:                 newDir,
+		ComparisonPostprocessor: su.ComparisonPostprocessor,
 	}
 	return newSu2, nil
 }
 
 type SU2ML struct {
 	*SU2
-	OrigDriver *driver.Driver
-	SaveDir    string
+	OrigDriver              *driver.Driver
+	SaveDir                 string
+	ComparisonPostprocessor Postprocessor
 }
 
 func (su *SU2ML) PostProcess() error {
-	fmt.Println("In post-process for ML Case")
+	if su.ComparisonPostprocessor != nil {
+		return su.ComparisonPostprocessor.PostProcess(su)
+	}
+	return nil
+}
+
+type Postprocessor interface {
+	PostProcess(*SU2ML) error
+}
+
+type FlatplatePostprocessor struct {
+}
+
+func (FlatplatePostprocessor) PostProcess(su *SU2ML) error {
+	fmt.Println("In post-process for flatplate ML Case")
 
 	_ = ransuq.PostProcessor(su)
 

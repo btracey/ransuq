@@ -84,6 +84,9 @@ func MlTurb(settings *Settings) error {
 
 	// Wait until all of the training runs are generated
 	wgTrain.Wait()
+
+	fmt.Println("Done generating training")
+
 	if trainGenErr != nil {
 		// Can't go on if there is an error generating the training data
 		// Wait until the testing data is generated so computation time isn't wasted
