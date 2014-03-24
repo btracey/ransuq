@@ -108,11 +108,15 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 	if err != nil {
 		return nil, err
 	}
+
+	wd := filepath.Join(newDir, "su2run")
+
+	fmt.Println("wd is ", wd)
 	mlDriver := &driver.Driver{
 		Name:       newName,
 		Options:    drive.Options.Copy(),
 		Config:     drive.Config,
-		Wd:         filepath.Join(newDir, "su2run"),
+		Wd:         wd,
 		Stdout:     newName + "_log.txt",
 		OptionList: newOptionList,
 		FancyName:  drive.FancyName + " ML",
@@ -121,12 +125,35 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 	// Edit the options
 	// Need to not care if the options have relative or not paths
 	// use filepath.IsAbs
-	if !filepath.IsAbs(mlDriver.Options.MeshFilename) {
-		mlDriver.Options.MeshFilename = mlDriver.Fullpath(mlDriver.Options.MeshFilename)
+
+	// First, get the absolute path of the mesh name in the mlDrive
+	absMesh, err := filepath.Abs(filepath.Join(drive.Wd, mlDriver.Options.MeshFilename))
+	if err != nil {
+		return nil, err
 	}
+
+	fmt.Println("first abs mesh is", absMesh)
+
+	// Get the relative mesh path
+	relMesh, err := filepath.Rel(wd, absMesh)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("algfile is ", algfile)
+
+	// Alg filename given by me so it's an absolute path
+	relAlgFile, err := filepath.Rel(wd, algfile)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("rel algfile is", relAlgFile)
+	fmt.Println("rel mesh is", relMesh)
+
 	// Now, change the turbulence model to SA, and add the json file
 	mlDriver.Options.KindTurbModel = "ML"
-	mlDriver.Options.MlTurbModelFile = algfile
+	mlDriver.Options.MeshFilename = relMesh
+	mlDriver.Options.MlTurbModelFile = relAlgFile
 	mlDriver.Options.ExtraOutput = true
 	mlDriver.OptionList["MlTurbModelFile"] = true
 	mlDriver.OptionList["ExtraOutput"] = true

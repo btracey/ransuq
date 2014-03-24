@@ -54,6 +54,9 @@ const (
 	SingleRae                    = "single_rae"
 )
 
+// All of these assume that the working directory is $GOPATH, which should be set
+// from the main script
+
 func GetDatasets(data string, caller driver.SU2Syscaller) ([]ransuq.Dataset, error) {
 	var datasets []ransuq.Dataset
 
@@ -133,8 +136,15 @@ func newFlatplate(re float64, fidelity string) ransuq.Dataset {
 		panic(err)
 	}
 
-	// set mesh file to be the base mesh file
-	drive.Options.MeshFilename = filepath.Join(basepath, drive.Options.MeshFilename)
+	// set mesh file to be the base mesh file but use relative path
+
+	fullMeshFilename := filepath.Join(basepath, drive.Options.MeshFilename)
+
+	relMeshFilename, err := filepath.Rel(wd, fullMeshFilename)
+	if err != nil {
+		panic(err)
+	}
+	drive.Options.MeshFilename = relMeshFilename
 
 	// set other things
 	drive.Options.ReynoldsNumber = re
@@ -203,7 +213,11 @@ func newAirfoil() ransuq.Dataset {
 	}
 
 	// set mesh file to be the base mesh file
-	drive.Options.MeshFilename = meshFile
+	relMeshName, err := filepath.Rel(wd, meshFile)
+	if err != nil {
+		panic(err)
+	}
+	drive.Options.MeshFilename = relMeshName
 	drive.Options.KindTurbModel = "ML"
 	drive.Options.MlTurbModelFile = "none"
 	drive.Options.MlTurbModelFeatureset = "SA"
