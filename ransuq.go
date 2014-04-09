@@ -465,6 +465,7 @@ func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
 	// Read back that all of the postprocessing has finished
 	for i := 0; i < len(runs); i++ {
 		<-finished
+		fmt.Println("Main routine read from finished. i = ", i)
 	}
 
 	// Lastly, collect the errors.
@@ -553,11 +554,13 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 		postprocessWg.Wait()
 		fmt.Println("Postprocess is done")
 		wg.Done()
+		fmt.Println("Past call to done 1")
 	}()
 
 	// Second thing to do is to run the normal post-processing stuff
 	wg.Add(1)
 	go func() {
+		fmt.Println("Starting training data post processing")
 		scalePredictor, err := LoadScalePredictor(testDone.Settings.Savepath)
 		if err != nil {
 			testDone.postprocessErr = err
@@ -565,11 +568,15 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 		}
 		postErr := postprocess(scalePredictor, testDone.Settings)
 		testDone.postprocessErr = postErr
+		fmt.Println("Done data postprocessing")
 		wg.Done()
+		fmt.Println("Past call to done 2")
 	}()
-
+	fmt.Println("Main postprocess routine reached call to wait")
 	wg.Wait()
+	fmt.Println("Main postprocess routine finished call to wait")
 	finished <- struct{}{}
+	fmt.Println("postprocess routine sent signal to finished")
 }
 
 type mlRunData struct {
