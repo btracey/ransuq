@@ -363,6 +363,7 @@ func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
 			panic("Cases still running after data generated")
 		}
 		close(mlChan)
+		fmt.Println("Launching goroutine returned\n")
 		// close(allDoneChan) // Don't need to close, will be garbage collected
 		return
 	}()
@@ -416,6 +417,7 @@ func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
 				mlDone <- mlRunner.Done()
 			}()
 		}
+		fmt.Println("ml run chan returned \n")
 	}()
 
 	// Channel for communicating everything is done
@@ -455,6 +457,7 @@ func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
 				delete(mlDoneMap, newID)
 				delete(testDoneMap, newID)
 				if sent == len(runs) {
+					fmt.Println("Postprocessing routine returned\n")
 					return
 				}
 			}
@@ -562,8 +565,10 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 	go func() {
 		fmt.Println("Starting training data post processing")
 		scalePredictor, err := LoadScalePredictor(testDone.Settings.Savepath)
-		if err != nil {
+		//if err != nil {
+		if true {
 			testDone.postprocessErr = err
+			runtime.GC()
 			return
 		}
 		postErr := postprocess(scalePredictor, testDone.Settings)
@@ -572,6 +577,7 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 		wg.Done()
 		fmt.Println("Past call to done 2")
 	}()
+	runtime.GC()
 	fmt.Println("Main postprocess routine reached call to wait")
 	wg.Wait()
 	fmt.Println("Main postprocess routine finished call to wait")
