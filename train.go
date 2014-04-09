@@ -22,6 +22,8 @@ type Predictor interface {
 	common.Predictor
 }
 
+//var _ =      floats.Norm(s, L)
+
 type Trainable interface {
 	regtrain.Trainable
 }
@@ -109,7 +111,6 @@ func (s *ScalePredictor) UnmarshalJSON(b []byte) error {
 	outputs := saveStruct.TestOutputs
 
 	testOutputs := make([][]float64, len(outputs))
-
 	for i := range inputs {
 		s.InputScaler.Scale(inputs[i])
 		testOutputs[i] = make([]float64, len(outputs[i]))
@@ -125,14 +126,22 @@ func (s *ScalePredictor) UnmarshalJSON(b []byte) error {
 
 // TODO: Make weights a vector (interface rather than explicit data)
 
+type TrainResults struct{
+	OptObj float64
+	OptGradNorm float64
+	FunctionEvaluations int
+}
+
 // Train trains the algorithm returning a predictor
-func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Predictor, error) {
+func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Predictor, TrainResults, error) {
 
 	inputScaler := t.InputScaler
 	outputScaler := t.OutputScaler
 	losser := t.Losser
 	regularizer := t.Regularizer
 	algorithm := t.Algorithm
+
+	emptyResults := TrainResults{}
 
 	// Set the scale
 	// TODO: Need to fix reggo/scale such that can use MutableRowMatrix etc.
@@ -158,10 +167,10 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 		fmt.Println("In linear solve")
 		parameters := regtrain.LinearSolve(linearTrainable, nil, inputs, outputs, weights, regularizer)
 		if parameters == nil {
-			return nil, fmt.Errorf("mldriver: error during linear solve")
+			return nil, emptyResults, fmt.Errorf("mldriver: error during linear solve")
 		}
 		algorithm.SetParameters(parameters)
-		return algorithm.Predictor(), nil
+		return algorithm.Predictor(), emptyResults, nil
 	}
 
 	fmt.Println("starting algorithm training")
@@ -182,8 +191,12 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	// Optimize the results
 	result, err := multivariate.OptimizeGrad(problem, param, optsettings, nil)
 	if err != nil {
-		return nil, err
+		return nil, emptyResults,err
 	}
+
+	emptyResults.FunctionEvaluations = result.FunctionEvaluations
+	emptyResults.OptGradNorm = floats.Norm(result.Grad, 2)
+	emptyResults.OptObj = result.Obj
 
 	algorithm.SetParameters(result.Loc)
 	regpred := algorithm.Predictor()
@@ -191,14 +204,14 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	// cast predictor as a predictor
 	pred, ok := regpred.(Predictor)
 	if !ok {
-		return nil, errors.New("predictor is not a Predictor")
+		return nil, emptyResults,errors.New("predictor is not a Predictor")
 	}
 
 	sp := &ScalePredictor{
-		Predictor:    pred,
+		Predictor:   pred,
 		InputScaler:  t.InputScaler,
 		OutputScaler: t.OutputScaler,
 	}
 
-	return sp, nil
+	return sp,emptyResults, nil
 }

@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"sync"
 )
 
@@ -50,6 +52,164 @@ type DatasetFinished struct {
 	Err error
 }
 
+type Scheduler interface {
+	//	Compute(Generatable)    // Blocks until job is started, but thread-safe
+	//	Done() GenerateFinished // Blocks until job started, but thread-safe
+	Launch() //
+	Quit()
+	AddChannel(GeneratableIO) // Adds a unique channel for generatable IO
+}
+
+type GeneratableIO struct {
+	In  chan Generatable
+	Out chan GenerateFinished
+}
+
+// Local Scheduler is a scheduler that assumes a shared-memory environment for
+//
+type LocalScheduler struct {
+	//compute         chan Generatable
+	//done            chan GenerateFinished
+	nCores          int
+	nAvailableCores int
+	cond            *sync.Cond
+	mux             *sync.Mutex
+
+	addMux *sync.RWMutex
+
+	quit chan struct{}
+	gen  chan generateChanIdx
+	//done chan generateChanIdx
+
+	genIOs []GeneratableIO
+	//quitGen []chan struct{}
+	wgs []*sync.WaitGroup
+}
+
+type generateChanIdx struct {
+	Gen Generatable
+	Idx int
+	Err error
+}
+
+func NewLocalScheduler() *LocalScheduler {
+	l := &LocalScheduler{
+		nCores:          runtime.GOMAXPROCS(0),
+		nAvailableCores: runtime.GOMAXPROCS(0),
+		mux:             &sync.Mutex{},
+		quit:            make(chan struct{}),
+		gen:             make(chan generateChanIdx),
+		//done:            make(chan GenerateFinished),
+		addMux: &sync.RWMutex{},
+	}
+	l.cond = sync.NewCond(l.mux)
+	return l
+}
+
+func (l *LocalScheduler) Launch() {
+	go func() {
+		l.compute()
+	}()
+}
+
+func (l *LocalScheduler) Quit() {
+	l.quit <- struct{}{}
+}
+
+/*
+func (l *LocalScheduler) Compute(gen Generatable) {
+	l.gen <- gen
+}
+*/
+
+// Adds a channel where generatables can be sent and retrived on a specific out
+// stream
+func (l *LocalScheduler) AddChannel(g GeneratableIO) {
+	l.addMux.Lock()
+	idx := len(l.genIOs)
+	l.genIOs = append(l.genIOs, g)
+	l.wgs = append(l.wgs, &sync.WaitGroup{})
+	l.addMux.Unlock()
+
+	// Launch the data type for sending new compute tasks
+	go func(idx int) {
+		l.addMux.RLock()
+		c := l.genIOs[idx].In
+		wg := l.wgs[idx]
+		l.addMux.RUnlock()
+
+		for gen := range c {
+			wg.Add(1)
+			// Send the task to be computed
+			l.gen <- generateChanIdx{gen, idx, nil}
+		}
+		// The receive channel has been closed. Wait until all of the tasks are done
+		// and then close the read chan
+		l.addMux.RLock()
+		l.wgs[idx].Wait()
+		close(l.genIOs[idx].Out)
+		l.addMux.RUnlock()
+	}(idx)
+}
+
+/*
+func (l *LocalScheduler) Done() GenerateFinished {
+	return <-l.done
+}
+*/
+
+func (l *LocalScheduler) compute() {
+	for {
+		select {
+		case <-l.quit:
+			return
+		case gen := <-l.gen:
+			neededCores := gen.Gen.NumCores()
+			if neededCores > l.nCores {
+				str := fmt.Sprintf("not enough available cores: %v requested %v available. generatable: %v", neededCores, l.nCores, gen.Gen.ID())
+				panic(str)
+			}
+			log.Print("gen received")
+			fmt.Println("ncores = ", l.nCores)
+			fmt.Println("avail cores = ", l.nAvailableCores)
+			// Wait until a processor is available
+			// TODO: Need to change this such that it doesn't block, but lets
+			// smaller jobs through.
+			l.cond.L.Lock()
+			for l.nAvailableCores < neededCores {
+				l.cond.Wait()
+			}
+			l.nAvailableCores -= neededCores
+			if l.nAvailableCores < 0 {
+				panic("nAvail should never be negative")
+			}
+			// Launch the case
+			go func(genIdx generateChanIdx) {
+				gen := genIdx.Gen
+				// Run the case
+				log.Print("Scheduler started " + gen.ID())
+				err := gen.Run()
+				log.Print("Scheduler finished " + gen.ID())
+				// Tell the scheduler that the cores are free again, and signal
+				// to the waiting goroutines that they can wait
+				l.mux.Lock()
+				l.nAvailableCores += gen.NumCores()
+				fmt.Println(gen.NumCores(), " readded to available")
+				l.mux.Unlock()
+				l.cond.Broadcast()
+
+				// Send the finished case back on the proper channel. Make sure
+				// we aren't appending at the same time
+				l.addMux.RLock()
+				l.wgs[genIdx.Idx].Done()
+				l.genIOs[genIdx.Idx].Out <- GenerateFinished{gen, err}
+				l.addMux.RUnlock()
+			}(gen)
+			l.cond.L.Unlock()
+		}
+	}
+}
+
 type DatasetRunner struct {
 	compute chan Generatable
 	done    chan GenerateFinished
@@ -75,6 +235,7 @@ func (d *DatasetRunner) Compute(dataset Dataset) {
 		// as completed
 		log.Printf("%v is not a generatable. Sending completion notice.", id)
 		d.norun <- dataset
+		return
 	}
 	// It is a generatable, but it may be have already been generated. If so,
 	// mark it as completed
@@ -82,7 +243,9 @@ func (d *DatasetRunner) Compute(dataset Dataset) {
 		id := dataset.ID()
 		log.Printf("%v has already been generated. Sending completion notice", id)
 		d.norun <- dataset
+		return
 	}
+
 	// Otherwise, send it to be generated
 	d.compute <- generatable
 }
@@ -91,11 +254,13 @@ func (d *DatasetRunner) Compute(dataset Dataset) {
 func (d *DatasetRunner) Done() DatasetFinished {
 	select {
 	case data := <-d.norun:
+		log.Printf("%v received without being generated", data.ID())
 		return DatasetFinished{
 			Dataset: data,
 			Err:     nil,
 		}
 	case run := <-d.done:
+		log.Printf("%v finished generating", run.Generatable.(Dataset).ID())
 		return DatasetFinished{
 			Dataset: run.Generatable.(Dataset),
 			Err:     run.Err,
@@ -139,43 +304,15 @@ func (d *trueDatasetGenerator) Receive(mlRunChan) {
 }
 */
 
-type mlRunData struct {
-	*Settings
-	trainError []error
-}
-
 // MultiTurb runs a list of cases
 // TODO: Needs to be some form of cluster calls
-func MultiTurb(runs []*Settings) error {
-	// TODO: Set up a set of worker goroutines. (probably should be another function call)
-	// the workers will need access to this channel
+func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
+	scheduler.Launch()
 
-	// Need to hide a layer of abstraction here. Want the workers to read SU^2 runs
-	// and ML Training, but also want to be able to control when specific pieces have been done
-
-	// Problem is that we want to be able to send out postprocessing runs, training
-	// runs, and testing runs
-
-	/*
-		datasetOutChan := make(chan Something)
-		datasetDoneChan := make(chan Something)
-		mlOutChan := make(chan SomethingElse)
-		mlDoneChan := make(chan SomethingElse)
-
-		runningDataChan := make(chan Generatable)
-		dataFinishedChan := make(chan genComplete)
-
-	*/
-
-	//mlRunChan := make(chan mlRun)
-	//learnerDoneChan := make(chan learner)
-
-	// First, go through all of the training and testing sets, and get all of
-	// the unique data
-
-	// TODO: need to implement the correct channels
 	physicalDataCompute := make(chan Generatable)
 	physicalDataDone := make(chan GenerateFinished)
+
+	scheduler.AddChannel(GeneratableIO{In: physicalDataCompute, Out: physicalDataDone})
 
 	// Get the unique data
 	idToIdx, uniqueDatasets, isTraining, learners := uniqueDatasets(runs)
@@ -191,7 +328,7 @@ func MultiTurb(runs []*Settings) error {
 		}(datataset)
 	}
 
-	mlChan := make(chan mlRunData)
+	mlChan := make(chan *mlRunData)
 	allDoneChan := make(chan *learner)
 	// Launch goroutine to read in training data as they come in and
 	go func() {
@@ -201,17 +338,22 @@ func MultiTurb(runs []*Settings) error {
 		for i := range learners {
 			stillRunning[i] = struct{}{}
 		}
+		fmt.Println("Still Running = ", stillRunning)
 
 		for i := 0; i < len(uniqueDatasets); i++ {
 			run := datasetRunner.Done()
+			fmt.Println("Still Running", stillRunning)
 			for idx := range stillRunning {
 				learners[idx].RegisterCompletion(run)
 
 				if !mlStarted[idx] && learners[idx].AllTrainDone() {
-					mlChan <- mlRunData{learners[idx].Settings, learners[idx].trainErrs}
+					log.Printf("Settings case %v sent to training", idx)
+					mlChan <- &mlRunData{Settings: learners[idx].Settings, trainErr: learners[idx].trainErrs, learningErr: nil}
 					mlStarted[idx] = true
 				}
 				if learners[idx].AllTrainDone() && learners[idx].AllTestDone() {
+					log.Printf("Settings case %v all data generated\n", idx)
+					fmt.Printf("learner case %v: %v\n", idx, learners[idx])
 					allDoneChan <- learners[idx]
 					delete(stillRunning, idx)
 				}
@@ -221,37 +363,282 @@ func MultiTurb(runs []*Settings) error {
 			panic("Cases still running after data generated")
 		}
 		close(mlChan)
-		close(allDoneChan)
+		// close(allDoneChan) // Don't need to close, will be garbage collected
 		return
 	}()
 
 	//trainingCompleteChan := make(chan mlRunData)
 
-	doneTraining := make(chan bool)
-	doneGenTesting := make(chan bool)
+	//doneTraining := make(chan bool)
+	//doneGenTesting := make(chan bool)
+
+	mlRunner := newMlRunner(scheduler)
+
+	// Channel for returning ML results. This could be done better.
+	mlDone := make(chan *mlRunData)
+
+	//mlCtr := &mlRunningCounter{}
+
 	// Read the ml runs that are coming in, and launch the training code
 	go func() {
-		// This could be replaced with some worker
-		for _ = range mlChan {
-			ml := <-mlChan
-			// Check if there were any errors
-			fmt.Println("ml = ", ml)
-			// Send the data on the done chan
+		for ml := range mlChan {
+			// See if there are any training errors. If there are, skip the compute
+			// process.
+			var sent bool
+			for _, err := range ml.trainErr {
+				if err != nil {
+					ml.learningErr = errors.New("error training")
+					mlDone <- ml
+					sent = true
+					break
+				}
+			}
+			if sent {
+				continue
+			}
+
+			go func(ml *mlRunData) {
+				mlRunner.Compute(ml)
+				// Might not be the same one, but this at least guarantees that
+				// the same number are sent and received.
+				// TODO: This should be better with channel close. Need to improve
+				// the scheduler
+				// The way to do this is to have a "NewJobAllocator" or something
+				// which returns a send only channel (for running jobs) and a
+				// read-only channel for reading the results back in. Then, it's easy
+				// to count the jobs right. The only trick is dealing with close, but
+				// this is probably up to the user to ensure they aren't all closed before
+				// they are sent and received ( like a normal single channel would)
+			}(ml)
+
+			// ... and this shows why we have a bad approach right now
+			go func() {
+				mlDone <- mlRunner.Done()
+			}()
 		}
-		doneTraining <- true
 	}()
 
-	// Read in the data learners when all the testing data has been done
+	// Channel for communicating everything is done
+	finished := make(chan struct{})
+
 	go func() {
-		for _ = range allDoneChan {
-			<-allDoneChan
+		var sent int
+		mlDoneMap := make(map[string]*mlRunData)
+		testDoneMap := make(map[string]*learner)
+		for {
+			var newID string
+			select {
+			case mlRun := <-mlDone:
+				newID = mlRun.ID()
+				// Add the ID to the mlDoneMap
+				mlDoneMap[newID] = mlRun
+
+			case testDone := <-allDoneChan:
+				// Add the ID to the testDoneMap
+				fmt.Println("testDone = ", testDone)
+				fakeMlRun := &mlRunData{Settings: testDone.Settings}
+				newID = fakeMlRun.ID()
+				testDoneMap[newID] = testDone
+			}
+
+			// See if the new returned case is in both maps, and if it is, launch
+			// the post-processing step
+
+			mlRun, mlOk := mlDoneMap[newID]
+			testDone, testOk := testDoneMap[newID]
+
+			if mlOk && testOk {
+				sent++
+				go func(mlRun *mlRunData, testDone *learner, finished chan struct{}) {
+					runPostprocessing(scheduler, mlRun, testDone, finished)
+				}(mlRun, testDone, finished)
+				if sent == len(runs) {
+					return
+				}
+			}
+
 		}
-		doneGenTesting <- true
 	}()
 
-	<-doneTraining
-	<-doneGenTesting
-	fmt.Println("All done")
+	// Read back that all of the postprocessing has finished
+	for i := 0; i < len(runs); i++ {
+		<-finished
+	}
+
+	// Lastly, collect the errors.
+	errors := make([]error, len(runs))
+
+	for i := 0; i < len(runs); i++ {
+		errors[i] = learners[i].ReportError()
+	}
+	return errors
+}
+
+func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner, finished chan struct{}) {
+	// To do post processing, we need to:
+	// 		launch all of the comparison jobs (if any)
+	//		Run all of the post-processing data
+	// These can be done concurrently. Use a waitgroup to synchronize finishing
+
+	// First, check if there was an error, if so, can't do any of the post-processing
+	if mlRun.learningErr != nil {
+		testDone.learningErr = mlRun.learningErr
+		finished <- struct{}{}
+		return
+	}
+
+	wg := sync.WaitGroup{}
+
+	// Launch all of the comparison jobs
+	wg.Add(1)
+	go func() {
+		// Create read and reply channels and add them to the scheduler
+		g := GeneratableIO{make(chan Generatable), make(chan GenerateFinished)}
+		scheduler.AddChannel(g)
+
+		var skipped int
+		for _, test := range mlRun.Settings.TestingData {
+			// See if the test data is comparable
+			comp, ok := test.(Comparable)
+
+			if !ok {
+				skipped++
+				continue
+			}
+			// If it is, set it up and send it
+			outLoc := filepath.Join(testDone.Settings.Savepath, "comparison")
+			algFile := PredictorFilename(testDone.Settings.Savepath)
+
+			gen, err := comp.Comparison(algFile, outLoc, testDone.Settings.FeatureSet)
+			if err != nil {
+				go func() { g.Out <- GenerateFinished{gen, err} }()
+				continue
+			}
+
+			// See if it's aleady been run
+			if gen.Generated() {
+				go func() { g.Out <- GenerateFinished{gen, nil} }()
+				continue
+			}
+			log.Println("Sending case to comparison: ", gen.ID())
+			go func() { g.In <- gen }()
+		}
+
+		postprocessWg := &sync.WaitGroup{}
+		for i := skipped; i < len(mlRun.Settings.TestingData); i++ {
+			// TODO: Fix this so that the order isn't messed up
+			gf := <-g.Out
+			log.Println("Case read from comparison: ", gf.ID())
+			if gf.Err != nil {
+				testDone.comparisonErrs[i] = gf.Err
+				continue
+			}
+			postprocessWg.Add(1)
+			go func(i int) {
+				p, ok := gf.Generatable.(PostProcessor)
+				if ok {
+					fmt.Println("Launching postprocess: " + gf.ID())
+					err := p.PostProcess()
+					fmt.Println("Done postprocessing")
+					if err != nil {
+						testDone.comparisonErrs[i] = err
+					}
+				}
+				postprocessWg.Done()
+			}(i)
+		}
+		fmt.Println("Waiting for postprocess to be done")
+		postprocessWg.Wait()
+		fmt.Println("Postprocess is done")
+		wg.Done()
+	}()
+
+	// Second thing to do is to run the normal post-processing stuff
+	wg.Add(1)
+	go func() {
+		scalePredictor, err := LoadScalePredictor(testDone.Settings.Savepath)
+		if err != nil {
+			testDone.postprocessErr = err
+			return
+		}
+		postErr := postprocess(scalePredictor, testDone.Settings)
+		testDone.postprocessErr = postErr
+		wg.Done()
+	}()
+
+	wg.Wait()
+	finished <- struct{}{}
+}
+
+type mlRunData struct {
+	*Settings
+	trainErr    []error
+	learningErr error
+}
+
+func (m *mlRunData) Generated() bool {
+	// Checks if the machine learning has already been run
+	algFile := PredictorFilename(m.Settings.Savepath)
+
+	_, err := os.Open(algFile)
+	if err != nil {
+		fmt.Println("Algfile is: ", algFile, " err is ", err.Error())
+	}
+	return err == nil // If we can open the alg file it's because it has been generated
+}
+
+func (m *mlRunData) ID() string {
+	// Say that the ID is the same as the predictor filename, should be unique
+	return PredictorFilename(m.Settings.Savepath)
+}
+
+func (m *mlRunData) NumCores() int {
+	return 6 // Need to do more
+}
+
+func (m *mlRunData) Run() error {
+
+	algsavepath := PredictorDirectory(m.Settings.Savepath)
+	algFile := PredictorFilename(m.Settings.Savepath)
+	err := os.MkdirAll(algsavepath, 0700)
+	if err != nil {
+		return err
+	}
+
+	settings := m.Settings
+
+	fmt.Println("Settings.TrainingData is:")
+	for _, dat := range settings.TrainingData {
+		fmt.Println(dat.ID())
+	}
+	// Load all of the training data
+	inputs, outputs, weights, loadErrs := LoadTrainingData(settings.TrainingData, DenseLoad,
+		settings.InputFeatures, settings.OutputFeatures, settings.WeightFeatures, settings.WeightFunc)
+
+	if loadErrs != nil {
+		return loadErrs
+	}
+
+	nRow, nCol := inputs.Dims()
+	fmt.Println("Calling train with ", nRow, " rows and ", nCol, " columns")
+
+	trainer := settings.Trainer
+	sp, result, err := trainer.Train(inputs, outputs, weights)
+	if err != nil {
+		return err
+	}
+
+	resultFile := filepath.Join(algsavepath, "train_result.json")
+	err = savePredictor(sp, result, algFile, resultFile)
+	if err != nil {
+		return errors.New("error saving predictor: " + err.Error())
+	}
+
+	// Make a plot of pred vs. truth and err. vs. truth over the training data
+	path := filepath.Join(m.Settings.Savepath, "postprocess", "trainingData")
+	ptrSP := sp.(*ScalePredictor)
+	// TODO: Fix this. It is really ugly.
+	makeComparisons(inputs, outputs, *ptrSP, settings.InputFeatures, settings.OutputFeatures, path)
 	return nil
 }
 
@@ -266,32 +653,61 @@ type genComplete struct {
 	err error
 }
 
-/*
-func sendRunners(runners []*datasetRunner, outChan chan Generatable, doneChan chan genComplete) {
-	for i, runner := range runners {
-		// First, check if the data is actually a generatable
-		generatable, ok := runner.Set.(Generatable)
-		if !ok {
-			id := runner.Set.ID()
-			// Data was not a generatable. Record that that was so, and send it
-			// as completed
-			log.Printf("%v is not a generatable. Sending completion notice.", runner.Set.ID())
-			doneChan <- genComplete{ID: id}
-		}
-		// It is a generatable, but it may be have already been generated. If so,
-		// mark it as completed
-		if generatable.Generated() {
-			id := runner.Set.ID()
-			log.Printf("%v has already been generated. Sending completion notice", runner.Set.ID())
-			doneChan <- genComplete{ID: id}
-		}
-		// Otherwise, send it to be generated
-		outChan <- generatable
-	}
-	// All of the training and testing data was sent, so close the channel
-	close(outChan)
+type mlRunnerStruct struct {
+	computeChan chan Generatable
+	doneChan    chan GenerateFinished
 }
-*/
+
+// Generates a new mlrunner and adds it to the scheduler
+func newMlRunner(scheduler Scheduler) *mlRunnerStruct {
+	cc := make(chan Generatable)
+	dc := make(chan GenerateFinished)
+
+	scheduler.AddChannel(GeneratableIO{In: cc, Out: dc})
+	return &mlRunnerStruct{
+		computeChan: cc,
+		doneChan:    dc,
+	}
+}
+func (m *mlRunnerStruct) Close() {
+	close(m.computeChan)
+}
+
+func (m *mlRunnerStruct) Compute(ml *mlRunData) {
+	log.Print("ml " + ml.ID() + "received for generating")
+	errStr := ""
+	for i, err := range ml.trainErr {
+		if err != nil {
+			if errStr == "" {
+				errStr = "Error training"
+			}
+			errStr += " case " + strconv.Itoa(i) + "err: " + err.Error()
+		}
+	}
+	if errStr != "" {
+		log.Print("ml " + ml.ID() + "had training generation error")
+		// There was an error training, so send it as done
+		ml.learningErr = errors.New(errStr)
+		m.doneChan <- GenerateFinished{Generatable: ml, Err: nil}
+		return
+	}
+	if ml.Generated() {
+		log.Print("ml " + ml.ID() + "has already been generated")
+		m.doneChan <- GenerateFinished{Generatable: ml, Err: nil}
+		return
+	}
+	log.Print("ml " + ml.ID() + "sent to compute")
+	m.computeChan <- ml
+}
+
+func (m *mlRunnerStruct) Done() *mlRunData {
+	data := <-m.doneChan
+	err := data.Err
+
+	ml := data.Generatable.(*mlRunData)
+	ml.learningErr = err
+	return ml
+}
 
 type datasetRunner struct {
 	Set        Dataset
@@ -311,6 +727,66 @@ type learner struct {
 	testIdx     []int
 	testRunning map[string]int
 	testErrs    []error
+
+	learningErr    error
+	comparisonErrs []error
+	postprocessErr error
+}
+
+func (l *learner) ReportError() error {
+	var str string
+	var isTrainingError bool
+	for _, err := range l.trainErrs {
+		if err != nil {
+			if isTrainingError == false {
+				str += "error training: "
+			}
+			str += err.Error()
+			isTrainingError = true
+		}
+	}
+	if isTrainingError {
+		str += " "
+	}
+	var isTestingError bool
+	for _, err := range l.testErrs {
+		if err != nil {
+			if isTestingError {
+				str += "error testing: "
+			}
+			str += err.Error()
+			isTestingError = true
+		}
+	}
+	if isTrainingError || isTestingError {
+		return errors.New(str)
+	}
+
+	if l.learningErr != nil {
+		return l.learningErr
+	}
+
+	isPostprocessError := l.postprocessErr != nil
+	if isPostprocessError {
+		str += "Postprocessing error: " + l.postprocessErr.Error() + " "
+	}
+
+	var isCompError bool
+	for _, err := range l.comparisonErrs {
+		if err != nil {
+			if isCompError == false {
+				str += "error comparing: "
+			}
+			str += err.Error()
+			isCompError = true
+		}
+	}
+
+	if isPostprocessError || isCompError {
+		return errors.New(str)
+	}
+
+	return nil
 }
 
 // RegisterCompletion logs in the learner that that dataset has finished running
@@ -341,11 +817,15 @@ func uniqueDatasets(runs []*Settings) (m map[string]int, uniqueData []Dataset, i
 	isTraining = make(map[string]bool)
 	uniqueData = make([]Dataset, 0)
 	learners = make([]*learner, len(runs))
+	for i := range learners {
+		learners[i] = &learner{}
+	}
 	var uniqueIdx int
 	for i, setting := range runs {
 		learners[i].Settings = setting
 		learners[i].trainRunning = make(map[string]int)
 		learners[i].trainIdx = make([]int, len(setting.TrainingData))
+		learners[i].trainErrs = make([]error, len(setting.TrainingData))
 		for j, dataset := range setting.TrainingData {
 			idx, ok := m[dataset.ID()]
 			if !ok {
@@ -359,6 +839,10 @@ func uniqueDatasets(runs []*Settings) (m map[string]int, uniqueData []Dataset, i
 			learners[i].trainRunning[dataset.ID()] = j
 			isTraining[dataset.ID()] = true
 		}
+		learners[i].testRunning = make(map[string]int)
+		learners[i].testIdx = make([]int, len(setting.TestingData))
+		learners[i].testErrs = make([]error, len(setting.TestingData))
+		learners[i].comparisonErrs = make([]error, len(setting.TestingData))
 		for j, dataset := range setting.TestingData {
 			idx, ok := m[dataset.ID()]
 			if !ok {
@@ -585,13 +1069,13 @@ func MlTurb(settings *Settings) error {
 		trainer := settings.Trainer
 		var sp Predictor
 
-		sp, err := trainer.Train(inputs, outputs, weights)
+		sp, result, err := trainer.Train(inputs, outputs, weights)
 		if err != nil {
 			wgTest.Wait()
 			return errors.New("error training: " + err.Error())
 		}
-		fmt.Println("Before save")
-		err = savePredictor(sp, algFile)
+		resultFile := filepath.Join(algsavepath, "train_result.json")
+		err = savePredictor(sp, result, algFile, resultFile)
 		if err != nil {
 			wgTest.Wait()
 			return errors.New("error saving predictor: " + err.Error())
@@ -686,7 +1170,7 @@ func reduceError(errs []error) []error {
 }
 
 //
-func savePredictor(sp Predictor, filename string) error {
+func savePredictor(sp Predictor, result TrainResults, filename, resultfilename string) error {
 	fmt.Println("save file name = ", filename)
 	f, err := os.Create(filename)
 	if err != nil {
@@ -699,6 +1183,22 @@ func savePredictor(sp Predictor, filename string) error {
 	}
 	f.Write(jsonBytes)
 	f.Close()
+
+	f2, err := os.Create(resultfilename)
+	if err != nil {
+		return err
+	}
+
+	jsonBytes, err = json.MarshalIndent(result, "", "\t")
+	if err != nil {
+		return err
+	}
+	_, err = f2.Write(jsonBytes)
+	if err != nil {
+		panic(err)
+	}
+	f2.Close()
+
 	return nil
 }
 
@@ -721,7 +1221,9 @@ func LoadScalePredictor(savepath string) (ScalePredictor, error) {
 	defer f.Close()
 
 	decoder := json.NewDecoder(f)
-
-	decoder.Decode(&p)
+	err = decoder.Decode(&p)
+	if err != nil {
+		return p, err
+	}
 	return p, nil
 }

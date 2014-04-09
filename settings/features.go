@@ -14,13 +14,14 @@ func init() {
 }
 
 const (
-	NondimProduction      = "nondim_production"
-	Production            = "production"
-	NondimProductionLog   = "nondim_production_log"
+	NondimProduction       = "nondim_production"
+	Production             = "production"
+	NondimProductionLog    = "nondim_production_log"
+	NondimProductionLogChi = "nondim_production_logchi"
 	Destruction            = "destruction"
-	NondimDestruction     = "nondim_destruction"
-	NondimCrossProduction = "nondim_crossproduction"
-	NondimSource          = "nondim_source"
+	NondimDestruction      = "nondim_destruction"
+	NondimCrossProduction  = "nondim_crossproduction"
+	NondimSource           = "nondim_source"
 )
 
 var sortedFeatureset []string
@@ -40,6 +41,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 		outputs = []string{"Production"}
 	case NondimProductionLog:
 		inputs = []string{"Chi_Log", "OmegaBar_Log"}
+		outputs = []string{"NondimProduction"}
+	case NondimProductionLogChi:
+		inputs = []string{"Chi_Log", "OmegaBar"}
 		outputs = []string{"NondimProduction"}
 	case NondimDestruction:
 		inputs = []string{"Chi", "OmegaBar"}

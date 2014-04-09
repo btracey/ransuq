@@ -16,7 +16,7 @@ func GetSettings(
 	weightSet,
 	algorithm,
 	trainSettings string,
-	caller driver.SU2Syscaller,
+	caller driver.Syscaller,
 ) (*ransuq.Settings, error) {
 	// Get the training data sets
 	trainingData, err := GetDatasets(training, caller)

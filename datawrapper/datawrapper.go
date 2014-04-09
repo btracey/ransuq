@@ -21,7 +21,7 @@ import (
 // SU2 is a type for loading SU2 data and running SU2 Cases
 type SU2 struct {
 	Driver                  *driver.Driver
-	Su2Caller               driver.SU2Syscaller
+	Su2Caller               driver.Syscaller
 	IgnoreNames             []string
 	IgnoreFunc              func([]float64) bool
 	Name                    string
@@ -32,11 +32,15 @@ func (su *SU2) ID() string {
 	return su.Name
 }
 
+func (su *SU2) NumCores() int {
+	return su.Su2Caller.NumCores()
+}
+
 func (su *SU2) Identifier() string {
 	return su.Name
 }
 
-func (su *SU2) SetSyscaller(sys driver.SU2Syscaller) {
+func (su *SU2) SetSyscaller(sys driver.Syscaller) {
 	su.Su2Caller = sys
 }
 
@@ -44,7 +48,7 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 	// Construct a dataloader
 	loader := &dataloader.Dataset{
 		Name:     su.Driver.Name,
-		Filename: su.Driver.Fullpath(su.Driver.Options.SolutionFlowFilename),
+		Filename: filepath.Join(su.Driver.Wd, su.Driver.Options.SolutionFlowFilename),
 		Format:   &dataloader.SU2_restart_2dturb{},
 	}
 

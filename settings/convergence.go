@@ -20,6 +20,7 @@ var sortedConvergence []string
 const (
 	// TODO: Better name
 	StandardTraining = "standard"
+	QuickTraining    = "quick"
 )
 
 func GetTrainer(train string, algorithm string, inputDim, outputDim int) (*ransuq.Trainer, error) {
@@ -43,12 +44,24 @@ func getTrainSettings(train string) (*ransuq.Trainer, error) {
 			Prefix:  "convergence setting not found",
 			Options: sortedConvergence,
 		}
+	case QuickTraining:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-3,
+				GradAbsTol:  1e-3,
+				MaxFunEvals: 1e2,
+			},
+			InputScaler:  &scale.Normal{},
+			OutputScaler: &scale.Normal{},
+			Losser:       loss.SquaredDistance{},
+			Regularizer:  nil,
+		}, nil
 	case StandardTraining:
 		return &ransuq.Trainer{
 			TrainSettings: ransuq.TrainSettings{
 				ObjAbsTol:   1e-6,
 				GradAbsTol:  1e-6,
-				MaxFunEvals: 1e5,
+				MaxFunEvals: 3e4,
 			},
 			InputScaler:  &scale.Normal{},
 			OutputScaler: &scale.Normal{},

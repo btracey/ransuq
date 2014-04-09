@@ -31,7 +31,10 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 
 	directEnd := "pred_vs_truth.pdf"
 	indirectEnd := "err_vs_truth.pdf"
-	conPltEnd := "err_scat.pdf"
+	conErrPltEnd := "err_scat.pdf"
+	conFunPltEnd := "fun_scat.pdf"
+
+
 
 	//TODO: Add contour bit up here
 
@@ -89,7 +92,8 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 		name := outputNames[j]
 		direct := pltName(path, outputNames[j], directEnd)
 		indirect := pltName(path, outputNames[j], indirectEnd)
-		contour := pltName(path, outputNames[j], conPltEnd)
+		contourErr := pltName(path, outputNames[j], conErrPltEnd)
+		contourFun := pltName(path, outputNames[j], conFunPltEnd)
 
 		err := os.MkdirAll(filepath.Join(path, outputNames[j]), 0700)
 		if err != nil {
@@ -163,30 +167,57 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 
 		if inputDim == 2 {
 			// Make a contour plot if the data is 2-D
-			conPts := make(plotter.XYZs, nSamples)
+			conErrPts := make(plotter.XYZs, nSamples)
 			for i := 0; i < nSamples; i++ {
-				conPts[i].X = inputData.At(i, 0)
-				conPts[i].Y = inputData.At(i, 1)
-				conPts[i].Z = errPts[i].Y
+				conErrPts[i].X = inputData.At(i, 0)
+				conErrPts[i].Y = inputData.At(i, 1)
+				conErrPts[i].Z = errPts[i].Y
 			}
 
-			conPlt, err := plot.New()
+			conFunPts := make(plotter.XYZs, nSamples)
+			for i := 0; i < nSamples; i++ {
+				conFunPts[i].X = inputData.At(i, 0)
+				conFunPts[i].Y = inputData.At(i, 1)
+				conFunPts[i].Z = outputData.At(i, j)
+			}
+
+			conErrPlt, err := plot.New()
 			if err != nil {
 				return err
 			}
 
-			conPlt.X.Label.Text = inputNames[0]
-			conPlt.Y.Label.Text = inputNames[1]
-
-			scat, err := myplot.NewColoredScatter(conPts)
+			conFunPlt, err := plot.New()
 			if err != nil {
 				return err
 			}
 
-			scat.GlyphStyle.Radius = vg.Centimeters(0.01)
-			scat.GlyphStyle.Shape = plot.CircleGlyph{}
-			conPlt.Add(scat)
-			err = conPlt.Save(4, 4, contour)
+			conErrPlt.X.Label.Text = inputNames[0]
+			conErrPlt.Y.Label.Text = inputNames[1]
+
+			conFunPlt.X.Label.Text = inputNames[0]
+			conFunPlt.Y.Label.Text = inputNames[1]
+
+			scatErr, err := myplot.NewColoredScatter(conErrPts)
+			if err != nil {
+				return err
+			}
+			scatFun, err := myplot.NewColoredScatter(conFunPts)
+			if err != nil {
+				return err
+			}
+
+			scatErr.GlyphStyle.Radius = vg.Centimeters(0.01)
+			scatErr.GlyphStyle.Shape = plot.CircleGlyph{}
+			conErrPlt.Add(scatErr)
+			err = conErrPlt.Save(4, 4, contourErr)
+			if err != nil {
+				return err
+			}
+
+			scatFun.GlyphStyle.Radius = vg.Centimeters(0.01)
+			scatFun.GlyphStyle.Shape = plot.CircleGlyph{}
+			conFunPlt.Add(scatFun)
+			err = conFunPlt.Save(4, 4, contourFun)
 			if err != nil {
 				return err
 			}

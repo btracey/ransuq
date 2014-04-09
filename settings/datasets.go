@@ -49,16 +49,34 @@ const (
 	NoDataset                    = "none"
 	SingleFlatplate              = "single_flatplate"
 	MultiFlatplate               = "multi_flatplate"
+	MultiFlatplateBL             = "multi_flatplate_bl"
 	FlatplateSweep               = "flatplate_sweep"
 	SyntheticFlatplateProduction = "synth_flat_prod"
+	MultiAndSynthFlatplate       = "multi_and_sync_flatplate"
 	SingleRae                    = "single_rae"
+	ExtraFlatplate               = "extra_flatplate"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
 // from the main script
 
-func GetDatasets(data string, caller driver.SU2Syscaller) ([]ransuq.Dataset, error) {
+func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error) {
 	var datasets []ransuq.Dataset
+
+	flatplate3_06 := newFlatplate(3e6, "med", "atwall")
+	flatplate4_06 := newFlatplate(4e6, "med", "atwall")
+	flatplate5_06 := newFlatplate(5e6, "med", "atwall")
+	flatplate6_06 := newFlatplate(6e6, "med", "atwall")
+	flatplate7_06 := newFlatplate(7e6, "med", "atwall")
+
+	flatplate3_06_BL := newFlatplate(3e6, "med", "justbl")
+	//flatplate4_06_BL := newFlatplate(4e6, "med", "justbl")
+	flatplate5_06_BL := newFlatplate(5e6, "med", "justbl")
+	//flatplate6_06_BL := newFlatplate(6e6, "med", "justbl")
+	flatplate7_06_BL := newFlatplate(7e6, "med", "justbl")
+
+	flatplateSweep := []ransuq.Dataset{flatplate3_06, flatplate4_06, flatplate5_06, flatplate6_06, flatplate7_06}
+	multiFlatplate := []ransuq.Dataset{flatplate3_06, flatplate5_06, flatplate7_06}
 
 	switch data {
 	default:
@@ -69,14 +87,20 @@ func GetDatasets(data string, caller driver.SU2Syscaller) ([]ransuq.Dataset, err
 	case "none":
 		datasets = []ransuq.Dataset{}
 	case SingleFlatplate:
-		dataset := newFlatplate(5e6, "med")
-		datasets = []ransuq.Dataset{dataset}
+		datasets = []ransuq.Dataset{flatplate5_06}
 	case MultiFlatplate:
-		datasets = []ransuq.Dataset{newFlatplate(3e6, "med"), newFlatplate(5e6, "med"), newFlatplate(7e6, "med")}
+		datasets = multiFlatplate
+	case MultiFlatplateBL:
+		datasets = []ransuq.Dataset{flatplate3_06_BL, flatplate5_06_BL, flatplate7_06_BL}
+	case ExtraFlatplate:
+		datasets = []ransuq.Dataset{newFlatplate(1e6, "med", "atwall"), newFlatplate(2e6, "med", "atwall"), newFlatplate(1.5e6, "med", "atwall")}
 	case FlatplateSweep:
-		datasets = []ransuq.Dataset{newFlatplate(3e6, "med"), newFlatplate(4e6, "med"), newFlatplate(5e6, "med"), newFlatplate(6e6, "med"), newFlatplate(7e6, "med")}
+		datasets = flatplateSweep
 	case SyntheticFlatplateProduction:
 		datasets = []ransuq.Dataset{synthetic.Production{synthetic.FlatplateBounds}}
+	case MultiAndSynthFlatplate:
+		datasets = []ransuq.Dataset{synthetic.Production{synthetic.FlatplateBounds}}
+		datasets = append(datasets, flatplateSweep...)
 	case SingleRae:
 		datasets = []ransuq.Dataset{newAirfoil()}
 	}
@@ -95,7 +119,7 @@ type FlatplateDataset struct {
 	datawrapper.SU2
 }
 
-func newFlatplate(re float64, fidelity string) ransuq.Dataset {
+func newFlatplate(re float64, fidelity string, ignoreType string) ransuq.Dataset {
 	basepath := filepath.Join(gopath, "data", "ransuq", "flatplate")
 	baseconfig := filepath.Join(basepath, "base_flatplate_config.cfg")
 
@@ -130,8 +154,13 @@ func newFlatplate(re float64, fidelity string) ransuq.Dataset {
 		Stdout:    name + "_log.txt",
 	}
 
-	// Set the base config options to be those
-	err = drive.SetRelativeOptions(baseconfig, false, nil)
+	baseconfigFile, err := os.Open(baseconfig)
+	if err != nil {
+		return nil
+	}
+
+	// Load in the existing
+	err = drive.Load(baseconfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -173,12 +202,38 @@ func newFlatplate(re float64, fidelity string) ransuq.Dataset {
 		panic("bad fidelity")
 	}
 
+	var ignoreFunc func(d []float64) bool
+	var ignoreNames []string
+	switch ignoreType {
+	case "atwall":
+		ignoreNames = []string{"YLoc"}
+		ignoreFunc = func(d []float64) bool { return d[0] < 1e-10 }
+	case "justbl":
+		ignoreNames = []string{"YLoc", "XLoc"}
+		ignoreFunc = func(d []float64) bool {
+			xloc := d[1]
+			yloc := d[0]
+			if yloc < 1e-10 {
+				return true
+			}
+			if xloc < 0 {
+				return true
+			}
+			if yloc > 0.06 {
+				return true
+			}
+			return false
+		}
+	default:
+		panic("unknown ignore type")
+	}
+
 	// Create an SU2 datawrapper from it
 	return &datawrapper.SU2{
 		Driver:      drive,
 		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
-		IgnoreNames: []string{"YLoc"},
-		IgnoreFunc:  func(d []float64) bool { return d[0] < 1e-10 },
+		IgnoreNames: ignoreNames,
+		IgnoreFunc:  ignoreFunc,
 		Name:        name,
 		ComparisonPostprocessor: datawrapper.FlatplatePostprocessor{},
 	}
@@ -206,8 +261,13 @@ func newAirfoil() ransuq.Dataset {
 		Stdout:    name + "_log.txt",
 	}
 
+	baseconfigFile, err := os.Open(baseconfig)
+	if err != nil {
+		panic(err)
+	}
+
 	// Set the base config options to be those
-	err := drive.SetRelativeOptions(baseconfig, false, nil)
+	err = drive.Load(baseconfigFile)
 	if err != nil {
 		panic(err)
 	}

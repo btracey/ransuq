@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/synthetic/sa"
 	"github.com/gonum/matrix/mat64"
 	"github.com/reggo/reggo/common"
@@ -24,15 +25,15 @@ func init() {
 
 var FlatplateBounds = &SABounds{
 	Name:        "Flatplate",
-	Chi:         [2]float64{50, 400},
-	Omegabar:    [2]float64{0, 200000},
+	LogChi:      [2]float64{-3, 6},
+	Omegabar:    [2]float64{0, 200},
 	LogWallDist: [2]float64{-6, 0},
 	LogNu:       [2]float64{-9, -7},
 }
 
 type SABounds struct {
 	Name        string
-	Chi         [2]float64
+	LogChi      [2]float64
 	Omegabar    [2]float64
 	LogWallDist [2]float64
 	LogNu       [2]float64
@@ -62,38 +63,58 @@ func (p Production) filename() string {
 */
 
 func (p Production) Generated() bool {
+	_ = ransuq.Generatable(p)
 	// Assume that if the file is there, it has been generated
 	_, err := os.Open(filepath.Join(p.Path(), p.Filename()))
 	b := !os.IsNotExist(err)
 	return b
 }
 
+func (p Production) NumCores() int {
+	return 1
+}
+
 func (p Production) Run() error {
 	fmt.Println("In production run")
-	chiBounds := p.Bounds.Chi
+	logChiBounds := p.Bounds.LogChi
 	omegaBarBounds := p.Bounds.Omegabar
 	logWallDistBounds := p.Bounds.LogWallDist
 	logNuBounds := p.Bounds.LogNu
 
-	headings := []string{"Chi", "OmegaBar", "SourceNondimer", "Production"}
+	headings := []string{"Chi", "Chi_Log", "OmegaBar", "OmegaBar_Log", "SourceNondimer", "NondimProduction", "Production"}
 
 	// Generate random data
-	data := mat64.NewDense(syntheticDatasetSize, 4, nil)
+	data := mat64.NewDense(syntheticDatasetSize, len(headings), nil)
 	for i := 0; i < syntheticDatasetSize; i++ {
-		chi := rand.Float64()*(chiBounds[1]-chiBounds[0]) + chiBounds[0]
+		logChi := rand.Float64()*(logChiBounds[1]-logChiBounds[0]) + logChiBounds[0]
 		omegaBar := rand.Float64()*(omegaBarBounds[1]-omegaBarBounds[0]) + omegaBarBounds[0]
 		logWallDist := rand.Float64()*(logWallDistBounds[1]-logWallDistBounds[0]) + logWallDistBounds[0]
 		logNu := rand.Float64()*(logNuBounds[1]-logNuBounds[0]) + logNuBounds[0]
 
+		chi := math.Pow(10, logChi)
+
 		sourceNondim := math.Pow(10, logNu-logWallDist) * (1 + chi)
 		sourceNondim = sourceNondim * sourceNondim
 
-		data.Set(i, 0, chi)
-		data.Set(i, 1, omegaBar)
-		data.Set(i, 2, sourceNondim)
+		var idx int
+		data.Set(i, idx, chi)
+		idx++
+		data.Set(i, idx, logChi)
+		idx++
+		data.Set(i, idx, omegaBar)
+		idx++
+		data.Set(i, idx, math.Log(omegaBar))
+		idx++
+		data.Set(i, idx, sourceNondim)
+		idx++
 		fmt.Println(sourceNondim)
+		nondimProduction := sa.NondimProduction(chi, omegaBar)
+		data.Set(i, idx, nondimProduction)
+		idx++
+
 		production := sa.Production(chi, omegaBar, sourceNondim)
-		data.Set(i, 3, production)
+		data.Set(i, idx, production)
+		idx++
 	}
 
 	return writeCSV(headings, data, p.Path(), p.Filename())

@@ -14,6 +14,8 @@ type Dataset interface {
 type Generatable interface {
 	Generated() bool
 	Run() error
+	ID() string
+	NumCores() int // Number of cores the job needs to run
 }
 
 // A CompGenerator is a type which can take in the trained algorithm and

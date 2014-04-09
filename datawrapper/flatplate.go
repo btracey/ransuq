@@ -60,16 +60,20 @@ func flatplateCompare(drivers []*driver.Driver, resultLocation string) error {
 	for i, drive := range drivers {
 		datasets[i] = &dataloader.Dataset{
 			Name:     drive.Name,
-			Filename: drive.Fullpath(drive.Options.SolutionFlowFilename),
+			Filename: filepath.Join(drive.Wd, drive.Options.SolutionFlowFilename),
 			Format:   &dataloader.SU2_restart_2dturb{},
 		}
 	}
 
+	fmt.Println("Starting data load")
+
+	fmt.Println("Datasets = ", datasets)
 	//datasets := mldriver.ConstructDataloaders(drivers)
 	data, err := dataloader.Load(inputNames, datasets)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Done loading data")
 
 	/*
 		gamma := drivers[0].Options.GammaValue
@@ -280,8 +284,11 @@ func calculateSkinFrictionCoefficient(data [][][]float64, fields map[string]int,
 }
 
 func plotSkinFrictionCoefficient(xs, cfs [][]float64, title string, labels []string) (*plot.Plot, error) {
+	fmt.Println("In plot skin friction coefficient")
+
 	// Create a series of lines
 	p, _ := plot.New()
+	fmt.Println("Done making new plot")
 	p.Title.Text = " "
 	p.X.Label.Text = "X"
 	p.Y.Label.Text = "Cf"
