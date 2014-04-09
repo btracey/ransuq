@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"runtime"
 
 	"github.com/btracey/ransuq"
@@ -12,12 +14,36 @@ import (
 	"github.com/gonum/matrix/mat64"
 
 	"github.com/btracey/su2tools/driver"
+
+	"github.com/davecheney/profile"
 )
 
-func main() {
+func init() {
 	mat64.Register(goblas.Blas{})
 	dbw.Register(goblas.Blas{})
-	runtime.GOMAXPROCS(runtime.NumCPU() - 2)
+}
+
+func main() {
+
+	var location string
+	flag.StringVar(&location, "location", "local", "where is the code being run (local, cluster)")
+	var doprofile bool
+	flag.BoolVar(&doprofile, "profile", false, "should the code be profiled")
+	flag.Parse()
+
+	switch location {
+	case "local":
+		runtime.GOMAXPROCS(runtime.NumCPU() - 2) // leave some CPU open so the computer doesn't crash
+	case "cluster":
+		runtime.GOMAXPROCS(runtime.NumCPU())
+	default:
+		log.Fatal("unknown location")
+	}
+
+	if doprofile {
+		defer profile.Start(profile.CPUProfile).Stop()
+	}
+
 	testTrainPairs := [][2]string{
 		//{settings.MultiFlatplate, settings.FlatplateSweep},
 		//{settings.MultiFlatplateBL, settings.FlatplateSweep},
