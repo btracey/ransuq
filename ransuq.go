@@ -452,6 +452,8 @@ func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
 				go func(mlRun *mlRunData, testDone *learner, finished chan struct{}) {
 					runPostprocessing(scheduler, mlRun, testDone, finished)
 				}(mlRun, testDone, finished)
+				delete(mlDoneMap, newID)
+				delete(testDoneMap, newID)
 				if sent == len(runs) {
 					return
 				}
