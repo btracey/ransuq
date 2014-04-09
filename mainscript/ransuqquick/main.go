@@ -51,13 +51,14 @@ func main() {
 		//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
 		//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
 		{settings.MultiAndSynthFlatplate, settings.NoDataset},
+		//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
 	}
 	algorithms := []string{"net_2_50"}
 	weights := []string{"none"}
 	features := []string{
 		//"nondim_production",
 		//"nondim_production_log",
-		"nondim_production_logchi",
+		//"nondim_production_logchi",
 		//"nondim_destruction",
 		//"nondim_crossproduction",
 		//"nondim_source",
