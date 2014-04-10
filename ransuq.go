@@ -563,19 +563,16 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 	// Second thing to do is to run the normal post-processing stuff
 	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		fmt.Println("Starting training data post processing")
 		scalePredictor, err := LoadScalePredictor(testDone.Settings.Savepath)
-		//if err != nil {
-		if true {
+		if err != nil {
 			testDone.postprocessErr = err
 			runtime.GC()
 			return
 		}
 		postErr := postprocess(scalePredictor, testDone.Settings)
 		testDone.postprocessErr = postErr
-		fmt.Println("Done data postprocessing")
-		wg.Done()
-		fmt.Println("Past call to done 2")
 	}()
 	runtime.GC()
 	fmt.Println("Main postprocess routine reached call to wait")
