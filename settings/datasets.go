@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/btracey/su2tools/config/enum"
+	"github.com/btracey/su2tools/config/su2types"
 	"github.com/btracey/su2tools/driver"
 	"github.com/btracey/su2tools/nondimensionalize"
 
@@ -55,6 +57,7 @@ const (
 	MultiAndSynthFlatplate       = "multi_and_sync_flatplate"
 	SingleRae                    = "single_rae"
 	ExtraFlatplate               = "extra_flatplate"
+	LES4                         = "les4"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -103,6 +106,14 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		datasets = append(datasets, flatplateSweep...)
 	case SingleRae:
 		datasets = []ransuq.Dataset{newAirfoil()}
+	case LES4:
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location:   filepath.Join(gopath, "data", "ransuq", "LES", "exp4.txt"),
+				Name:       "LES_exp4",
+				IgnoreFunc: func([]float64) bool { return false },
+			},
+		}
 	}
 
 	for _, dataset := range datasets {
@@ -187,9 +198,13 @@ func newFlatplate(re float64, fidelity string, ignoreType string) ransuq.Dataset
 	totalP := nondimensionalize.TotalPressure(pressure, drive.Options.MachNumber, drive.Options.GammaValue)
 	totalTString := strconv.FormatFloat(totalT, 'g', 16, 64)
 	totalPString := strconv.FormatFloat(totalP, 'g', 16, 64)
-	pString := strconv.FormatFloat(pressure, 'g', 16, 64)
-	drive.Options.MarkerInlet = "( inlet, " + totalTString + ", " + totalPString + ", 1.0, 0.0, 0.0 )"
-	drive.Options.MarkerOutlet = "( outlet, " + pString + ", farfield, " + pString + " )"
+	//pString := strconv.FormatFloat(pressure, 'g', 16, 64)
+	drive.Options.MarkerInlet = &su2types.Inlet{"( inlet, " + totalTString + ", " + totalPString + ", 1.0, 0.0, 0.0 )"}
+	drive.Options.MarkerOutlet = &su2types.StringDoubleList{
+		Strings: []string{"outlet", "farfield"},
+		Doubles: []float64{pressure, pressure},
+	}
+	//drive.Options.MarkerOutlet = &su2types.StringDoubleList{"( outlet, " + pString + ", farfield, " + pString + " )"}
 
 	switch fidelity {
 	case "low":
@@ -278,7 +293,7 @@ func newAirfoil() ransuq.Dataset {
 		panic(err)
 	}
 	drive.Options.MeshFilename = relMeshName
-	drive.Options.KindTurbModel = "ML"
+	drive.Options.KindTurbModel = enum.Ml
 	drive.Options.MlTurbModelFile = "none"
 	drive.Options.MlTurbModelFeatureset = "SA"
 	drive.Options.ExtraOutput = true
@@ -295,3 +310,23 @@ func newAirfoil() ransuq.Dataset {
 		Name:        name,
 	}
 }
+
+/*
+// LES Dataset for Karthik
+type LesKarthik struct {
+	Int         int
+
+}
+
+
+
+	tmpData, err := dataloader.LoadFromDataset(fields, loader)
+	if err != nil {
+		return nil, err
+	}
+}
+
+func getLesKarthik(names []string) []ransuq.Dataset {
+
+}
+*/

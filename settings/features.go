@@ -22,6 +22,7 @@ const (
 	NondimDestruction      = "nondim_destruction"
 	NondimCrossProduction  = "nondim_crossproduction"
 	NondimSource           = "nondim_source"
+	FwLES                  = "fw_les"
 )
 
 var sortedFeatureset []string
@@ -57,6 +58,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case NondimSource:
 		inputs = []string{"Chi", "OmegaBar", "NuGradMagBar"}
 		outputs = []string{"NondimSource"}
+	case FwLES:
+		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}
+		outputs = []string{"Fw"}
 	}
 	return inputs, outputs, nil
 }

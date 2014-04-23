@@ -21,6 +21,7 @@ const (
 	// TODO: Better name
 	StandardTraining = "standard"
 	QuickTraining    = "quick"
+	FiveKIter        = "5kiter"
 )
 
 func GetTrainer(train string, algorithm string, inputDim, outputDim int) (*ransuq.Trainer, error) {
@@ -62,6 +63,18 @@ func getTrainSettings(train string) (*ransuq.Trainer, error) {
 				ObjAbsTol:   1e-6,
 				GradAbsTol:  1e-6,
 				MaxFunEvals: 3e4,
+			},
+			InputScaler:  &scale.Normal{},
+			OutputScaler: &scale.Normal{},
+			Losser:       loss.SquaredDistance{},
+			Regularizer:  nil,
+		}, nil
+	case FiveKIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 5e3,
 			},
 			InputScaler:  &scale.Normal{},
 			OutputScaler: &scale.Normal{},

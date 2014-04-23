@@ -9,8 +9,7 @@ import (
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/dataloader"
-
-	"github.com/btracey/su2tools/config"
+	"github.com/btracey/su2tools/config/enum"
 	"github.com/btracey/su2tools/driver"
 
 	"github.com/reggo/reggo/common"
@@ -99,12 +98,14 @@ func (su *SU2) Run() error {
 
 func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ransuq.Generatable, error) {
 	// Copy the config file and run it.
-	newOptionList := make(config.OptionList)
+	//newOptionList := make(config.OptionList)
 	drive := su.Driver
 
-	for key, val := range drive.OptionList {
-		newOptionList[key] = val
-	}
+	/*
+		for key, val := range drive.OptionList {
+			newOptionList[key] = val
+		}
+	*/
 
 	newName := drive.Name + "_ml"
 	newDir := filepath.Join(outLoc, newName)
@@ -117,12 +118,13 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 
 	fmt.Println("wd is ", wd)
 	mlDriver := &driver.Driver{
-		Name:       newName,
-		Options:    drive.Options.Copy(),
-		Config:     drive.Config,
-		Wd:         wd,
-		Stdout:     newName + "_log.txt",
-		OptionList: newOptionList,
+		Name:    newName,
+		Options: drive.Options.Copy(),
+		Config:  drive.Config,
+		Wd:      wd,
+		Stdout:  newName + "_log.txt",
+		//OptionList: newOptionList,
+		OptionList: nil,
 		FancyName:  drive.FancyName + " ML",
 	}
 
@@ -155,12 +157,12 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 	fmt.Println("rel mesh is", relMesh)
 
 	// Now, change the turbulence model to SA, and add the json file
-	mlDriver.Options.KindTurbModel = "ML"
+	mlDriver.Options.KindTurbModel = enum.Ml
 	mlDriver.Options.MeshFilename = relMesh
 	mlDriver.Options.MlTurbModelFile = relAlgFile
 	mlDriver.Options.ExtraOutput = true
-	mlDriver.OptionList["MlTurbModelFile"] = true
-	mlDriver.OptionList["ExtraOutput"] = true
+	//mlDriver.OptionList["MlTurbModelFile"] = true
+	//mlDriver.OptionList["ExtraOutput"] = true
 	mlDriver.Options.ExtIter = 9999.0
 	mlDriver.Options.MlTurbModelFeatureset = featureSet
 

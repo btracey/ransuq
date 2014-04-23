@@ -9,8 +9,8 @@ import (
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/settings"
 
+	"github.com/gonum/blas/cblas"
 	"github.com/gonum/blas/dbw"
-	"github.com/gonum/blas/goblas"
 	"github.com/gonum/matrix/mat64"
 
 	"github.com/btracey/su2tools/driver"
@@ -19,8 +19,10 @@ import (
 )
 
 func init() {
-	mat64.Register(goblas.Blas{})
-	dbw.Register(goblas.Blas{})
+	//mat64.Register(goblas.Blas{})
+	//dbw.Register(goblas.Blas{})
+	mat64.Register(cblas.Blas{})
+	dbw.Register(cblas.Blas{})
 }
 
 func main() {
@@ -50,10 +52,14 @@ func main() {
 		//{settings.SingleRae, settings.SingleRae},
 		//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
 		//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
-		{settings.MultiAndSynthFlatplate, settings.NoDataset},
+		//{settings.MultiAndSynthFlatplate, settings.NoDataset},
 		//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
+		{settings.LES4, settings.NoDataset},
 	}
-	algorithms := []string{"net_2_50"}
+	algorithms := []string{
+		"net_2_50",
+		//"net_1_50",
+	}
 	weights := []string{"none"}
 	features := []string{
 		//"nondim_production",
@@ -62,11 +68,15 @@ func main() {
 		//"nondim_destruction",
 		//"nondim_crossproduction",
 		//"nondim_source",
-		"production",
+		//"production",
 		//"destruction",
+		settings.FwLES,
 	}
-	//convergence := []string{settings.StandardTraining}
-	convergence := []string{settings.QuickTraining}
+	convergence := []string{
+		//settings.StandardTraining,
+		settings.FiveKIter,
+	}
+	//convergence := []string{settings.QuickTraining}
 
 	caller := driver.Serial{}
 

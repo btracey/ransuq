@@ -31,3 +31,21 @@ func ft2(chi float64) float64 {
 func Production(chi, omega, sourceNondim float64) (production float64) {
 	return sourceNondim * NondimProduction(chi, omega)
 }
+
+/*
+func Destruction(chi, omega, sourceNondim float64) (destruction float64) {
+	return sourceNondim * NondimDestruction(chi, omega)
+}
+*/
+
+/*
+func NondimDestruction(chi, omega float64) (nondimDestruction float64) {
+
+}
+
+func Fw(chi float64) float64 {
+
+}
+
+func R_Nondim()
+*/
