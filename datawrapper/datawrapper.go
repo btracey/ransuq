@@ -9,6 +9,7 @@ import (
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/dataloader"
+	"github.com/btracey/su2tools/config"
 	"github.com/btracey/su2tools/config/enum"
 	"github.com/btracey/su2tools/driver"
 
@@ -25,6 +26,8 @@ type SU2 struct {
 	IgnoreFunc              func([]float64) bool
 	Name                    string
 	ComparisonPostprocessor Postprocessor
+	ExtraMlStrings          []string
+	ComparisonNameAddendum  string // Additional string to append after _ML in the comparison file
 }
 
 func (su *SU2) ID() string {
@@ -82,9 +85,25 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 func (su *SU2) Generated() bool {
 	_ = ransuq.Comparable(su)
 	fmt.Println("In ", su.Name, " generated")
-	b := su.Driver.IsComputed()
-	fmt.Println(su.Name, "computed?: ", b)
-	return b
+
+	status := su.Driver.Status()
+	if status == driver.Computed {
+		return true
+	}
+
+	fmt.Println("Not computed because: ", status)
+
+	if status == driver.UnequalOptions {
+		f := filepath.Join(su.Driver.Wd, su.Driver.Config)
+		otherOptions, _, err := config.ReadFromFile(f)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println(config.Diff(otherOptions, su.Driver.Options))
+	}
+
+	return false
 }
 
 func (su *SU2) Run() error {
@@ -107,7 +126,7 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 		}
 	*/
 
-	newName := drive.Name + "_ml"
+	newName := drive.Name + "_ml" + su.ComparisonNameAddendum
 	newDir := filepath.Join(outLoc, newName)
 	err := os.MkdirAll(newDir, 0700)
 	if err != nil {
@@ -125,7 +144,7 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 		Stdout:  newName + "_log.txt",
 		//OptionList: newOptionList,
 		OptionList: nil,
-		FancyName:  drive.FancyName + " ML",
+		FancyName:  drive.FancyName + " ML " + su.ComparisonNameAddendum,
 	}
 
 	// Edit the options
@@ -165,6 +184,11 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 	//mlDriver.OptionList["ExtraOutput"] = true
 	mlDriver.Options.ExtIter = 9999.0
 	mlDriver.Options.MlTurbModelFeatureset = featureSet
+
+	// Add in the extra strings (say, for just doing ML in BL)
+	extraString := make([]string, len(su.ExtraMlStrings))
+	copy(extraString, su.ExtraMlStrings)
+	mlDriver.Options.MlTurbModelExtra = extraString
 
 	newSu2 := &SU2ML{
 		SU2: &SU2{

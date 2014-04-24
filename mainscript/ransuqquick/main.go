@@ -49,12 +49,13 @@ func main() {
 	testTrainPairs := [][2]string{
 		//{settings.MultiFlatplate, settings.FlatplateSweep},
 		//{settings.MultiFlatplateBL, settings.FlatplateSweep},
+		{settings.MultiFlatplateBL, settings.SingleFlatplate},
 		//{settings.SingleRae, settings.SingleRae},
 		//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
 		//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
 		//{settings.MultiAndSynthFlatplate, settings.NoDataset},
 		//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
-		{settings.LES4, settings.NoDataset},
+		//{settings.LES4, settings.NoDataset},
 	}
 	algorithms := []string{
 		"net_2_50",
@@ -62,7 +63,7 @@ func main() {
 	}
 	weights := []string{"none"}
 	features := []string{
-		//"nondim_production",
+		"nondim_production",
 		//"nondim_production_log",
 		//"nondim_production_logchi",
 		//"nondim_destruction",
@@ -73,9 +74,15 @@ func main() {
 		settings.FwLES,
 	}
 	convergence := []string{
-		//settings.StandardTraining,
-		settings.FiveKIter,
+		settings.StandardTraining,
+		//settings.FiveKIter,
 	}
+
+	extraStrings := []string{
+		//settings.NoExtraStrings,
+		settings.FlatplateBlOnlyCutoff,
+	}
+
 	//convergence := []string{settings.QuickTraining}
 
 	caller := driver.Serial{}
@@ -92,6 +99,7 @@ func main() {
 			for _, weight := range weights {
 				for _, alg := range algorithms {
 					for _, conv := range convergence {
+						//for _, extraString := range extraStrings {
 						set, err := settings.GetSettings(
 							pair[0],
 							pair[1],
@@ -100,11 +108,13 @@ func main() {
 							alg,
 							conv,
 							caller,
+							extraStrings, // Need to pass all of them because don't want to double do training
 						)
 						if err != nil {
 							panic(err)
 						}
 						sets = append(sets, set)
+						//}
 					}
 				}
 			}

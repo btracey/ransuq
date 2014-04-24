@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/btracey/ransuq"
+	"github.com/btracey/ransuq/datawrapper"
 	"github.com/btracey/su2tools/driver"
 )
 
@@ -17,6 +18,7 @@ func GetSettings(
 	algorithm,
 	trainSettings string,
 	caller driver.Syscaller,
+	extraStringsSetting []string,
 ) (*ransuq.Settings, error) {
 	// Get the training data sets
 	trainingData, err := GetDatasets(training, caller)
@@ -24,9 +26,44 @@ func GetSettings(
 		return nil, errors.New("training " + err.Error())
 	}
 
-	testingData, err := GetDatasets(testing, caller)
+	baseTestingData, err := GetDatasets(testing, caller)
 	if err != nil {
 		return nil, errors.New("testing " + err.Error())
+	}
+
+	var testingData []ransuq.Dataset
+
+	for i, set := range extraStringsSetting {
+		extraStrings, err := GetSU2ExtraStrings(set)
+		if err != nil {
+			return nil, errors.New("text")
+		}
+		// For the testing data, loop over the datasets to see if they are SU2 sets.
+		// If so, pass the extra strings on
+		for _, dataset := range baseTestingData {
+			su2, ok := dataset.(*datawrapper.SU2)
+			if ok {
+				// Need to copy the dataset. Hopefully these pointers don't mess with anything...
+				newSU2 := &datawrapper.SU2{
+					Driver:      su2.Driver,
+					Su2Caller:   su2.Su2Caller,
+					IgnoreNames: su2.IgnoreNames,
+					IgnoreFunc:  su2.IgnoreFunc,
+					Name:        su2.Name,
+					ComparisonPostprocessor: su2.ComparisonPostprocessor,
+					ExtraMlStrings:          extraStrings,
+					ComparisonNameAddendum:  set,
+				}
+
+				testingData = append(testingData, newSU2)
+			} else {
+				// Since it's not an SU2, nothing changes, so only add it once
+				if i == 0 {
+					testingData = append(testingData, dataset)
+				}
+			}
+
+		}
 	}
 
 	// Get the input and output features

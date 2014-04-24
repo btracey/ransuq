@@ -199,7 +199,8 @@ func newFlatplate(re float64, fidelity string, ignoreType string) ransuq.Dataset
 	totalTString := strconv.FormatFloat(totalT, 'g', 16, 64)
 	totalPString := strconv.FormatFloat(totalP, 'g', 16, 64)
 	//pString := strconv.FormatFloat(pressure, 'g', 16, 64)
-	drive.Options.MarkerInlet = &su2types.Inlet{"( inlet, " + totalTString + ", " + totalPString + ", 1.0, 0.0, 0.0 )"}
+	//drive.Options.MarkerInlet = &su2types.Inlet{"( inlet, " + totalTString + ", " + totalPString + ", 1.0, 0.0, 0.0 )"}
+	drive.Options.MarkerInlet = &su2types.Inlet{Strings: []string{"inlet", totalTString, totalPString, "1", "0", "0"}}
 	drive.Options.MarkerOutlet = &su2types.StringDoubleList{
 		Strings: []string{"outlet", "farfield"},
 		Doubles: []float64{pressure, pressure},
