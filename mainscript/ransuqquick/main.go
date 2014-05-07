@@ -9,8 +9,8 @@ import (
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/settings"
 
-	"github.com/gonum/blas/cblas"
 	"github.com/gonum/blas/dbw"
+	"github.com/gonum/blas/goblas"
 	"github.com/gonum/matrix/mat64"
 
 	"github.com/btracey/su2tools/driver"
@@ -19,10 +19,10 @@ import (
 )
 
 func init() {
-	//mat64.Register(goblas.Blas{})
-	//dbw.Register(goblas.Blas{})
-	mat64.Register(cblas.Blas{})
-	dbw.Register(cblas.Blas{})
+	mat64.Register(goblas.Blas{})
+	dbw.Register(goblas.Blas{})
+	//mat64.Register(cblas.Blas{})
+	//dbw.Register(cblas.Blas{})
 }
 
 func main() {
@@ -49,13 +49,14 @@ func main() {
 	testTrainPairs := [][2]string{
 		//{settings.MultiFlatplate, settings.FlatplateSweep},
 		//{settings.MultiFlatplateBL, settings.FlatplateSweep},
-		{settings.MultiFlatplateBL, settings.SingleFlatplate},
+		//{settings.MultiFlatplateBL, settings.SingleFlatplate},
 		//{settings.SingleRae, settings.SingleRae},
 		//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
 		//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
 		//{settings.MultiAndSynthFlatplate, settings.NoDataset},
 		//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
 		//{settings.LES4, settings.NoDataset},
+		{settings.LES4Tenth, settings.NoDataset},
 	}
 	algorithms := []string{
 		"net_2_50",
@@ -63,7 +64,7 @@ func main() {
 	}
 	weights := []string{"none"}
 	features := []string{
-		"nondim_production",
+		//"nondim_production",
 		//"nondim_production_log",
 		//"nondim_production_logchi",
 		//"nondim_destruction",
@@ -71,11 +72,13 @@ func main() {
 		//"nondim_source",
 		//"production",
 		//"destruction",
-		settings.FwLES,
+		//settings.FwLES,
+		settings.FwLES2,
 	}
 	convergence := []string{
-		settings.StandardTraining,
+		//settings.StandardTraining,
 		//settings.FiveKIter,
+		settings.TenKIter,
 	}
 
 	extraStrings := []string{

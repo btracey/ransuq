@@ -58,6 +58,7 @@ const (
 	SingleRae                    = "single_rae"
 	ExtraFlatplate               = "extra_flatplate"
 	LES4                         = "les4"
+	LES4Tenth                    = "les4_tenth"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -112,6 +113,18 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 				Location:   filepath.Join(gopath, "data", "ransuq", "LES", "exp4.txt"),
 				Name:       "LES_exp4",
 				IgnoreFunc: func([]float64) bool { return false },
+			},
+		}
+	case LES4Tenth:
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location: filepath.Join(gopath, "data", "ransuq", "LES", "exp4_mod.txt"),
+				Name:     "LES_exp4",
+				IgnoreFunc: func(a []float64) bool {
+					intpoint := int(a[0])
+					return (intpoint % 10) != 0
+				},
+				IgnoreNames: []string{"Datapoint"},
 			},
 		}
 	}
