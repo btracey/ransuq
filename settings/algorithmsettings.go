@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/reggo/reggo/nnet"
+	"github.com/reggo/reggo/supervised/nnet"
 	regtrain "github.com/reggo/reggo/train"
 )
 
