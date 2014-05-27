@@ -243,6 +243,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"NuHatGradNormBar"},
 		Transformer:   logFunc,
 	},
+	"NuGradNondimer": &FieldTransformer{
+		InternalNames: []string{"NuGradNondimer"},
+		Transformer:   identityFunc,
+	},
 }
 
 // SU2 is a type for data from an su2_restart restart file

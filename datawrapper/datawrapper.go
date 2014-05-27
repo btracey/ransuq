@@ -84,7 +84,6 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 
 func (su *SU2) Generated() bool {
 	_ = ransuq.Comparable(su)
-	fmt.Println("In ", su.Name, " generated")
 
 	status := su.Driver.Status()
 	if status == driver.Computed {
@@ -107,7 +106,6 @@ func (su *SU2) Generated() bool {
 }
 
 func (su *SU2) Run() error {
-	fmt.Println("Started running ", su.Driver.Name)
 	err := su.Driver.Run(su.Su2Caller)
 	if err != nil {
 		return err

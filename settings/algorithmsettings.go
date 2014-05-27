@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/btracey/ransuq/mlalg"
 	"github.com/reggo/reggo/supervised/nnet"
 	regtrain "github.com/reggo/reggo/train"
 )
@@ -21,8 +22,9 @@ func init() {
 }
 
 const (
-	NetOneFifty = "net_1_50"
-	NetTwoFifty = "net_2_50"
+	NetOneFifty    = "net_1_50"
+	NetTwoFifty    = "net_2_50"
+	MulNetTwoFifty = "mul_net_2_50"
 )
 
 var sortedAlgorithm []string
@@ -44,6 +46,13 @@ func getAlgorithm(alg string, inputDim, outputDim int) (regtrain.Trainable, erro
 		return nnet.NewSimpleTrainer(inputDim, outputDim, 1, 50, nnet.Linear{})
 	case NetTwoFifty:
 		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 50, nnet.Linear{})
+	case MulNetTwoFifty:
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 50, nnet.Linear{})
+		if err != nil {
+			return nil, err
+		}
+		mulnet := mlalg.MulTrainer{net}
+		return mulnet, nil
 	default:
 		return nil, Missing{
 			Prefix:  "algorithm setting not found",

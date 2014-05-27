@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/btracey/ransuq"
+	"github.com/btracey/ransuq/mlalg"
 	"github.com/btracey/ransuq/settings"
 
 	"github.com/gonum/blas/dbw"
@@ -45,90 +46,222 @@ func main() {
 	if doprofile {
 		defer profile.Start(profile.CPUProfile).Stop()
 	}
+	/*
+		testTrainPairs := [][2]string{
+			//{settings.SingleFlatplate, settings.NoDataset},
+			//{settings.MultiFlatplate, settings.FlatplateSweep},
+			//{settings.MultiFlatplate, settings.NoDataset},
+			//{settings.MultiFlatplateBL, settings.FlatplateSweep},
+			//{settings.MultiFlatplateBL, settings.SingleFlatplate},
+			//{settings.SingleRae, settings.SingleRae},
+			//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
+			//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
+			//{settings.MultiAndSynthFlatplate, settings.NoDataset},
+			//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
+			//{settings.LES4, settings.NoDataset},
+			//{settings.LES4Tenth, settings.NoDataset},
+			{settings.LES4Tenth, settings.SingleFlatplate},
+		}
+		algorithms := []string{
+			"net_2_50",
+			//"net_1_50",
+			//settings.MulNetTwoFifty,
+		}
+		weights := []string{"none"}
+		features := []string{
+			//"nondim_production",
+			//"nondim_production_log",
+			//"nondim_production_logchi",
+			//"nondim_destruction",
+			//settings.NondimCrossProduction,
+			//"nondim_source",
+			//settings.Production,
+			//settings.CrossProduction,
+			//"destruction",
+			//settings.FwLES,
+			settings.FwLES2,
+		}
+		convergence := []string{
+			//settings.StandardTraining,
+			//settings.FiveKIter,
+			settings.TenKIter,
+		}
 
-	testTrainPairs := [][2]string{
-		//{settings.MultiFlatplate, settings.FlatplateSweep},
-		//{settings.MultiFlatplateBL, settings.FlatplateSweep},
-		//{settings.MultiFlatplateBL, settings.SingleFlatplate},
-		//{settings.SingleRae, settings.SingleRae},
-		//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
-		//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
-		//{settings.MultiAndSynthFlatplate, settings.NoDataset},
-		//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
-		//{settings.LES4, settings.NoDataset},
-		{settings.LES4Tenth, settings.NoDataset},
-	}
-	algorithms := []string{
-		"net_2_50",
-		//"net_1_50",
-	}
-	weights := []string{"none"}
-	features := []string{
-		//"nondim_production",
-		//"nondim_production_log",
-		//"nondim_production_logchi",
-		//"nondim_destruction",
-		//"nondim_crossproduction",
-		//"nondim_source",
-		//"production",
-		//"destruction",
-		//settings.FwLES,
-		settings.FwLES2,
-	}
-	convergence := []string{
-		//settings.StandardTraining,
-		//settings.FiveKIter,
-		settings.TenKIter,
-	}
+		extraStrings := []string{
+			//settings.NoExtraStrings,
+			settings.FlatplateBlOnlyCutoff,
+		}
 
-	extraStrings := []string{
-		//settings.NoExtraStrings,
-		settings.FlatplateBlOnlyCutoff,
-	}
-
-	//convergence := []string{settings.QuickTraining}
+		//convergence := []string{settings.QuickTraining}
+	*/
 
 	caller := driver.Serial{}
 
-	nRuns := len(testTrainPairs) * len(algorithms) * len(weights) * len(features) * len(convergence)
-	fmt.Println("The number of runs that will be done is: ", nRuns)
+	//nRuns := len(testTrainPairs) * len(algorithms) * len(weights) * len(features) * len(convergence)
 
 	// Construct all of the datasets
 
 	var sets []*ransuq.Settings
+	settingCases := GetCases()
+	fmt.Println("The number of runs that will be done is: ", len(settingCases))
+	for _, c := range settingCases {
 
-	for _, pair := range testTrainPairs {
-		for _, feature := range features {
-			for _, weight := range weights {
-				for _, alg := range algorithms {
-					for _, conv := range convergence {
-						//for _, extraString := range extraStrings {
-						set, err := settings.GetSettings(
-							pair[0],
-							pair[1],
-							feature,
-							weight,
-							alg,
-							conv,
-							caller,
-							extraStrings, // Need to pass all of them because don't want to double do training
-						)
-						if err != nil {
-							panic(err)
+		fmt.Println("Set testing data", c.TestingData)
+		set, err := settings.GetSettings(
+			c.TrainingData,
+			c.TestingData,
+			c.Features,
+			c.Weight,
+			c.Algorithm,
+			c.Convergence,
+			caller,
+			c.ExtraString, // Need to pass all of them because don't want to double do training
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if c.Algorithm == settings.MulNetTwoFifty {
+			set.Trainer.InputScaler = &mlalg.MulScaler{Scaler: set.Trainer.InputScaler}
+		}
+		sets = append(sets, set)
+	}
+
+	/*
+		for _, pair := range testTrainPairs {
+			for _, feature := range features {
+				for _, weight := range weights {
+					for _, alg := range algorithms {
+						for _, conv := range convergence {
+							//for _, extraString := range extraStrings {
+							set, err := settings.GetSettings(
+								pair[0],
+								pair[1],
+								feature,
+								weight,
+								alg,
+								conv,
+								caller,
+								extraStrings, // Need to pass all of them because don't want to double do training
+							)
+							if err != nil {
+								panic(err)
+							}
+							sets = append(sets, set)
+
+							if alg == settings.MulNetTwoFifty {
+								set.Trainer.InputScaler = mlalg.MulScaler{set.Trainer.InputScaler}
+							}
 						}
-						sets = append(sets, set)
-						//}
 					}
 				}
 			}
 		}
-	}
+	*/
 	scheduler := ransuq.NewLocalScheduler()
 	err := ransuq.MultiTurb(sets, scheduler)
 	if err != nil {
+		fmt.Println("Finished with error")
 		fmt.Println(err)
 		return
 	}
 	fmt.Println("Finished without error")
 
+}
+
+type settingCase struct {
+	Name         string
+	TrainingData string
+	TestingData  string
+	Algorithm    string
+	Weight       string
+	Features     string
+	Convergence  string
+	ExtraString  []string
+}
+
+func GetCases() []*settingCase {
+	return []*settingCase{
+		/*
+			{
+				Name:         "Nondim Production for single flatplate",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.SingleFlatplate,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+			{
+				Name:         "Nondim Production for multi flatplate",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.SingleFlatplate,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "Nondim Destruction for single flatplate",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.SingleFlatplate,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimDestruction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "Test Learn scaled cross production",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.NoDataset,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.CrossProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
+
+		{
+			Name:         "Nondim CrossProduction for single flatplate",
+			TrainingData: settings.SingleFlatplate,
+			TestingData:  settings.MultiFlatplate,
+			Algorithm:    settings.NetTwoFifty,
+			Weight:       settings.NoWeight,
+			Features:     settings.NondimCrossProduction,
+			Convergence:  settings.TenKIter,
+			ExtraString:  []string{settings.NoExtraStrings},
+		},
+
+		/*
+			{
+				Name:         "Nondim Source for single flatplate",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.SingleFlatplate,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimSource,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "LES tenth of Data for Fw only in BL",
+				TrainingData: settings.LES4Tenth,
+				TestingData:  settings.SingleFlatplate,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.LES4Tenth,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+			},
+		*/
+	}
 }
