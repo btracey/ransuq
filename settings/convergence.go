@@ -24,6 +24,8 @@ const (
 	FiveKIter        = "5kiter"
 	TenKIter         = "10kiter"
 	OneHundIter      = "100iter"
+	HundKIter        = "100kiter"
+	MilIter          = "militer"
 )
 
 func GetTrainer(train string, algorithm string, inputDim, outputDim int) (*ransuq.Trainer, error) {
@@ -89,6 +91,30 @@ func getTrainSettings(train string) (*ransuq.Trainer, error) {
 				ObjAbsTol:   1e-6,
 				GradAbsTol:  1e-6,
 				MaxFunEvals: 1e4,
+			},
+			InputScaler:  &scale.Normal{},
+			OutputScaler: &scale.Normal{},
+			Losser:       loss.SquaredDistance{},
+			Regularizer:  nil,
+		}, nil
+	case HundKIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e5,
+			},
+			InputScaler:  &scale.Normal{},
+			OutputScaler: &scale.Normal{},
+			Losser:       loss.SquaredDistance{},
+			Regularizer:  nil,
+		}, nil
+	case MilIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e6,
 			},
 			InputScaler:  &scale.Normal{},
 			OutputScaler: &scale.Normal{},

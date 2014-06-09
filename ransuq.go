@@ -605,7 +605,7 @@ func (m *mlRunData) ID() string {
 }
 
 func (m *mlRunData) NumCores() int {
-	return 6 // Need to do more
+	return runtime.GOMAXPROCS(0) - 1 // -1 so that we can also start postprocess routines at the same time
 }
 
 func (m *mlRunData) Run() error {
