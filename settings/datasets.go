@@ -59,6 +59,7 @@ const (
 	ExtraFlatplate               = "extra_flatplate"
 	LES4                         = "les4"
 	LES4Tenth                    = "les4_tenth"
+	SingleNaca0012               = "single_naca_0012"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -126,6 +127,10 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 				},
 				IgnoreNames: []string{"Datapoint"},
 			},
+		}
+	case SingleNaca0012:
+		datasets = []ransuq.Dataset{
+			newNaca0012(0),
 		}
 	}
 
@@ -300,6 +305,65 @@ func newAirfoil() ransuq.Dataset {
 	if err != nil {
 		panic(err)
 	}
+
+	// set mesh file to be the base mesh file
+	relMeshName, err := filepath.Rel(wd, meshFile)
+	if err != nil {
+		panic(err)
+	}
+	drive.Options.MeshFilename = relMeshName
+	drive.Options.KindTurbModel = enum.Ml
+	drive.Options.MlTurbModelFile = "none"
+	drive.Options.MlTurbModelFeatureset = "SA"
+	drive.Options.ExtraOutput = true
+	drive.OptionList["MlTurbModelFile"] = true
+	drive.OptionList["MlTurbModelFeatureset"] = true
+	drive.OptionList["ExtraOutput"] = true
+
+	// Create an SU2 datawrapper from it
+	return &datawrapper.SU2{
+		Driver:      drive,
+		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
+		IgnoreNames: []string{"YLoc"},
+		IgnoreFunc:  func(d []float64) bool { return d[0] < 1e-10 },
+		Name:        name,
+	}
+}
+
+func newNaca0012(aoa float64) ransuq.Dataset {
+	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "naca0012")
+	configName := "naca0012.cfg"
+	meshName := "mesh_NACA0012_turb_897x257.su2"
+	baseconfig := filepath.Join(basepath, "ransuqbase", configName)
+	meshFile := filepath.Join(basepath, "ransuqbase", meshName)
+
+	aoaString := strconv.FormatFloat(aoa, 'g', 16, 64)
+
+	name := "Naca0012_" + aoaString
+
+	wd := filepath.Join(basepath, "Naca0012_"+aoaString)
+
+	// Create the driver
+	drive := &driver.Driver{
+		Name:      name,
+		Config:    configName,
+		Wd:        wd,
+		FancyName: "NACA 0012 AOA = " + aoaString,
+		Stdout:    name + "_log.txt",
+	}
+
+	baseconfigFile, err := os.Open(baseconfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// Set the base config options to be those
+	err = drive.Load(baseconfigFile)
+	if err != nil {
+		panic(err)
+	}
+
+	drive.Options.Aoa = aoa
 
 	// set mesh file to be the base mesh file
 	relMeshName, err := filepath.Rel(wd, meshFile)

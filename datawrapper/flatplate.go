@@ -487,7 +487,7 @@ func plotProfileData(profileData [][][][]float64, xLoc []float64, fields map[str
 	if err != nil {
 		return err
 	}
-	err = MakeProfilePlot(xLoc, xData, logYPlusData, "Source Term", "Source", "Log Y+", labels, baseloc, "source_vs_yplus", false, false)
+	err = MakeProfilePlot(xLoc, logYPlusData, xData, " ", "Log Y+", "Source", labels, baseloc, "source_vs_yplus", false, false)
 	if err != nil {
 		return err
 	}

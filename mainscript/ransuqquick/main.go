@@ -4,7 +4,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"runtime"
+	"time"
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/mlalg"
@@ -24,6 +26,8 @@ func init() {
 	dbw.Register(goblas.Blas{})
 	//mat64.Register(cblas.Blas{})
 	//dbw.Register(cblas.Blas{})
+
+	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
@@ -121,7 +125,13 @@ func main() {
 			log.Fatal(err)
 		}
 		if c.Algorithm == settings.MulNetTwoFifty {
-			set.Trainer.InputScaler = &mlalg.MulScaler{Scaler: set.Trainer.InputScaler}
+			os := &mlalg.MulOutputScaler{}
+			is := &mlalg.MulInputScaler{
+				Scaler:          set.Trainer.InputScaler,
+				MulOutputScaler: os,
+			}
+			set.Trainer.InputScaler = is
+			set.Trainer.OutputScaler = os
 		}
 		sets = append(sets, set)
 	}
@@ -158,12 +168,15 @@ func main() {
 		}
 	*/
 	scheduler := ransuq.NewLocalScheduler()
-	err := ransuq.MultiTurb(sets, scheduler)
-	if err != nil {
-		fmt.Println("Finished with error")
-		fmt.Println(err)
-		return
+	errs := ransuq.MultiTurb(sets, scheduler)
+
+	for _, err := range errs {
+		if err != nil {
+			fmt.Println("Finished with error")
+			fmt.Println(errs)
+		}
 	}
+
 	fmt.Println("Finished without error")
 
 }
@@ -181,143 +194,229 @@ type settingCase struct {
 
 func GetCases() []*settingCase {
 	return []*settingCase{
+		/*
+			{
+				Name:         "Nondim Production for single flatplate",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.SingleRae,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
 
-		{
-			Name:         "Nondim Production for single flatplate",
-			TrainingData: settings.SingleFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimProduction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim Production for multi flatplate",
-			TrainingData: settings.MultiFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimProduction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim Production for multi flatplate BL",
-			TrainingData: settings.MultiFlatplateBL,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimProduction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
-		},
+			{
+				Name:         "Nondim Production for multi flatplate",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.SingleRae,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
 
-		{
-			Name:         "Nondim Destruction for single flatplate",
-			TrainingData: settings.SingleFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimDestruction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim Destruction for multi flatplate",
-			TrainingData: settings.MultiFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimDestruction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim Destruction for multi flatplate BL",
-			TrainingData: settings.MultiFlatplateBL,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimDestruction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
-		},
+			{
+				Name:         "Nondim Production for multi flatplate BL",
+				TrainingData: settings.MultiFlatplateBL,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+			},
 
-		{
-			Name:         "Nondim CrossProduction for single flatplate",
-			TrainingData: settings.SingleFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimCrossProduction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim CrossProduction for multi flatplate",
-			TrainingData: settings.MultiFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimCrossProduction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim CrossProduction for multi flatplate BL",
-			TrainingData: settings.MultiFlatplateBL,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimCrossProduction,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
-		},
+			{
+				Name:         "Nondim Destruction for single flatplate",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimDestruction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+			{
+				Name:         "Nondim Destruction for multi flatplate",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimDestruction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+			{
+				Name:         "Nondim Destruction for multi flatplate BL",
+				TrainingData: settings.MultiFlatplateBL,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimDestruction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+			},
 
-		{
-			Name:         "Nondim Source for single flatplate",
-			TrainingData: settings.SingleFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimSource,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim CrossProduction for multi flatplate",
-			TrainingData: settings.MultiFlatplate,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimSource,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
-		{
-			Name:         "Nondim CrossProduction for multi flatplate BL",
-			TrainingData: settings.MultiFlatplateBL,
-			TestingData:  settings.FlatplateSweep,
-			Algorithm:    settings.NetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.NondimSource,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
-		},
+			{
+				Name:         "Nondim CrossProduction for single flatplate",
+				TrainingData: settings.SingleFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimCrossProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+
+			{
+				Name:         "Nondim CrossProduction for multi flatplate",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimCrossProduction,
+				Convergence:  settings.TenKIter,
+
+				ExtraString: []string{settings.NoExtraStrings},
+			},
+
+			{
+				Name:         "Nondim CrossProduction for multi flatplate BL",
+				TrainingData: settings.MultiFlatplateBL,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimCrossProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+			},
+		*/
 
 		/*
 			{
-				Name:         "Test Learn scaled cross production",
+				Name:         "Nondim Source for single flatplate",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimSource,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "Nondim CrossProduction for multi flatplate",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimSource,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+			{
+				Name:         "Nondim CrossProduction for multi flatplate BL",
+				TrainingData: settings.MultiFlatplateBL,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.NetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.NondimSource,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+			},
+		*/
+
+		/*
+			{
+				Name:         "Learn dimensional cross production",
 				TrainingData: settings.SingleFlatplate,
 				TestingData:  settings.NoDataset,
-				Algorithm:    settings.MulNetTwoFifty,
+				Algorithm:    settings.NetTwoFifty,
 				Weight:       settings.NoWeight,
 				Features:     settings.CrossProduction,
 				Convergence:  settings.TenKIter,
 				ExtraString:  []string{},
 			},
 		*/
+
+		/*
+			{
+				Name:         "Test Learn scaled production",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.SingleFlatplate,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Production,
+				Convergence:  settings.OneHundIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "Learn scaled production",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Production,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "Learn scaled destruction",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Destruction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+
+		/*
+			{
+				Name:         "Learn scaled cross production",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.CrossProduction,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+		/*
+			{
+				Name:         "Test Learn scaled full source",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.FlatplateSweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+
+		/*
+			{
+				Name:         "Learn scaled full source",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.NoDataset,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
+
 		/*
 			{
 				Name:         "Nondim CrossProduction for single flatplate",
@@ -355,5 +454,15 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
 			},
 		*/
+		{
+			Name:         "Single NACA 0012 test case",
+			TrainingData: settings.SingleNaca0012,
+			TestingData:  settings.SingleNaca0012,
+			Algorithm:    settings.MulNetTwoFifty,
+			Weight:       settings.NoWeight,
+			Features:     settings.CrossProduction,
+			Convergence:  settings.TenKIter,
+			ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+		},
 	}
 }

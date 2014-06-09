@@ -1,7 +1,8 @@
 package mlalg
 
 import (
-	"fmt"
+	"encoding/json"
+	"errors"
 	"math"
 
 	"github.com/gonum/matrix/mat64"
@@ -11,13 +12,18 @@ import (
 )
 
 func init() {
-	common.Register(MulTrainer{})
+	common.Register(MulPredictor{})
+	common.Register(&MulInputScaler{})
+	common.Register(&MulOutputScaler{})
 }
 
 // Multiplies the inner by a constant which is the first input
+// This should be used as the output scaler
 type MulTrainer struct {
 	Inner train.Trainable
 }
+
+// MAKE THIS AN INTERFACE
 
 func (m MulTrainer) GrainSize() int {
 	return m.Inner.GrainSize()
@@ -44,6 +50,8 @@ func (m MulTrainer) Parameters(s []float64) []float64 {
 }
 
 func (m MulTrainer) SetParameters(s []float64) {
+	//fmt.Println("In mul trainer set parameters", len(s))
+	//fmt.Println("Mul trainer num parameters", m.NumParameters())
 	m.Inner.SetParameters(s)
 }
 
@@ -84,6 +92,28 @@ func (m mulFeaturizer) Featurize(input, feature []float64) {
 
 type MulPredictor struct {
 	inner common.Predictor
+}
+
+type mulPredictorMarshaler struct {
+	Inner common.InterfaceMarshaler
+}
+
+func (m MulPredictor) MarshalJSON() ([]byte, error) {
+	return json.Marshal(mulPredictorMarshaler{
+		Inner: common.InterfaceMarshaler{
+			I: m.inner,
+		},
+	})
+}
+
+func (m *MulPredictor) UnmarshalJSON(b []byte) error {
+	v := mulPredictorMarshaler{}
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	m.inner = v.Inner.I.(common.Predictor)
+	return nil
 }
 
 func (m MulPredictor) Predict(input, output []float64) ([]float64, error) {
@@ -153,53 +183,137 @@ func (m mulTrainerLossDeriver) Deriv(parameters, featurizedInput, predOutput, dL
 	}
 }
 
-type MulScaler struct {
-	Scaler   scale.Scaler
+type MulOutputScaler struct {
 	mulScale float64
+	isScaled bool
 }
 
-// Don't scale the first input
+func (m *MulOutputScaler) SetScale(data *mat64.Dense) error {
+	// Get a view of the data without the first column
+	r, c := data.Dims()
 
-func (m *MulScaler) SetScale(data *mat64.Dense) error {
+	if c != 1 {
+		return errors.New("only one output dimenison allowed")
+	}
+
+	// Set the scale such that the average of the outputs is 1
+	var sum float64
+	for i := 0; i < r; i++ {
+		v := data.At(i, 0)
+		sum += math.Abs(v)
+	}
+
+	m.mulScale = sum / float64(r)
+	m.isScaled = true
+
+	return nil
+}
+
+func (m MulOutputScaler) Scale(point []float64) error {
+	if len(point) != 1 {
+		errors.New("only one output dimenison allowed")
+	}
+	point[0] /= m.mulScale
+	return nil
+}
+
+func (m MulOutputScaler) Unscale(point []float64) error {
+	if len(point) != 1 {
+		errors.New("only one output dimenison allowed")
+	}
+	point[0] *= m.mulScale
+	return nil
+}
+
+func (m MulOutputScaler) Dimensions() int {
+	return 1
+}
+
+func (m MulOutputScaler) IsScaled() bool {
+	return m.isScaled
+}
+
+type mulOutputMarshaler struct {
+	IsScaled bool
+	MulScale float64
+}
+
+func (m *MulOutputScaler) MarshalJSON() ([]byte, error) {
+	return json.Marshal(mulOutputMarshaler{
+		IsScaled: m.isScaled,
+		MulScale: m.mulScale,
+	})
+}
+
+func (m *MulOutputScaler) UnmarshalJSON(b []byte) error {
+	v := &mulOutputMarshaler{}
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	m.isScaled = v.IsScaled
+	m.mulScale = v.MulScale
+	return nil
+}
+
+type MulInputScaler struct {
+	Scaler scale.Scaler
+	*MulOutputScaler
+}
+
+type mulInputMarshaler struct {
+	Scaler          common.InterfaceMarshaler
+	MulOutputScaler *MulOutputScaler
+}
+
+// Need to implement JSON because scaler is an interface
+func (m *MulInputScaler) MarshalJSON() ([]byte, error) {
+	return json.Marshal(mulInputMarshaler{
+		Scaler: common.InterfaceMarshaler{
+			I: m.Scaler,
+		},
+		MulOutputScaler: m.MulOutputScaler,
+	})
+}
+
+func (m *MulInputScaler) UnmarshalJSON(b []byte) error {
+	v := &mulInputMarshaler{}
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	m.Scaler = v.Scaler.I.(scale.Scaler)
+	m.MulOutputScaler = v.MulOutputScaler
+	return nil
+}
+
+// This relies on the OutputScaler being called (not necessarily first)
+func (m *MulInputScaler) SetScale(data *mat64.Dense) error {
 	// Get a view of the data without the first column
 	r, c := data.Dims()
 	mat := &mat64.Dense{}
 	mat.View(data, 0, 1, r, c-1)
 
-	// Set the scale such that the sum of the scales is 1
-	maxval := math.Inf(-1)
-	for i := 0; i < r; i++ {
-		v := data.At(i, 0)
-		if v < 0 {
-			panic("This assumes positive scale")
-		}
-		if v > maxval {
-			maxval = v
-		}
-
-	}
-
-	fmt.Println("mul scale is ", maxval)
-
-	m.mulScale = maxval
-
 	return m.Scaler.SetScale(mat)
 }
 
-func (m MulScaler) Scale(point []float64) error {
-	point[0] /= m.mulScale
+func (m MulInputScaler) Scale(point []float64) error {
+	if m.MulOutputScaler.mulScale == 0 {
+		panic("mulScale is zero")
+	}
+	point[0] /= m.MulOutputScaler.mulScale
 	return m.Scaler.Scale(point[1:])
 }
 
-func (m MulScaler) Unscale(point []float64) error {
-	point[0] *= m.mulScale
+func (m MulInputScaler) Unscale(point []float64) error {
+	point[0] *= m.MulOutputScaler.mulScale
 	return m.Scaler.Unscale(point[1:])
 }
 
-func (m MulScaler) IsScaled() bool {
+func (m MulInputScaler) IsScaled() bool {
 	return m.Scaler.IsScaled()
 }
 
-func (m MulScaler) Dimensions() int {
-	return m.Scaler.Dimensions()
+func (m MulInputScaler) Dimensions() int {
+	return m.Scaler.Dimensions() + 1
 }

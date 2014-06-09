@@ -121,14 +121,16 @@ func (s *ScalePredictor) UnmarshalJSON(b []byte) error {
 		}
 	}
 
+	fmt.Println("ScalePredictor unmarshaled sucessfully")
+
 	return nil
 }
 
 // TODO: Make weights a vector (interface rather than explicit data)
 
-type TrainResults struct{
-	OptObj float64
-	OptGradNorm float64
+type TrainResults struct {
+	OptObj              float64
+	OptGradNorm         float64
 	FunctionEvaluations int
 }
 
@@ -148,12 +150,20 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	if inputScaler != nil {
 		iDense := inputs.(*mat64.Dense)
 		inputScaler.SetScale(iDense)
+	}
+
+	if outputScaler != nil {
+		oDense := outputs.(*mat64.Dense)
+		outputScaler.SetScale(oDense)
+	}
+
+	if inputScaler != nil {
+		iDense := inputs.(*mat64.Dense)
 		scale.ScaleData(inputScaler, iDense)
 		defer scale.UnscaleData(inputScaler, iDense)
 	}
 	if outputScaler != nil {
 		oDense := outputs.(*mat64.Dense)
-		outputScaler.SetScale(oDense)
 		scale.ScaleData(outputScaler, oDense)
 		defer scale.UnscaleData(outputScaler, oDense)
 	}
@@ -191,7 +201,7 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	// Optimize the results
 	result, err := multivariate.OptimizeGrad(problem, param, optsettings, nil)
 	if err != nil {
-		return nil, emptyResults,err
+		return nil, emptyResults, err
 	}
 
 	emptyResults.FunctionEvaluations = result.FunctionEvaluations
@@ -204,14 +214,14 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	// cast predictor as a predictor
 	pred, ok := regpred.(Predictor)
 	if !ok {
-		return nil, emptyResults,errors.New("predictor is not a Predictor")
+		return nil, emptyResults, errors.New("predictor is not a Predictor")
 	}
 
 	sp := &ScalePredictor{
-		Predictor:   pred,
+		Predictor:    pred,
 		InputScaler:  t.InputScaler,
 		OutputScaler: t.OutputScaler,
 	}
 
-	return sp,emptyResults, nil
+	return sp, emptyResults, nil
 }
