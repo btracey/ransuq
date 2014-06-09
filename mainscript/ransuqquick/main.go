@@ -456,13 +456,13 @@ func GetCases() []*settingCase {
 		*/
 		{
 			Name:         "Single NACA 0012 test case",
-			TrainingData: settings.SingleNaca0012,
-			TestingData:  settings.SingleNaca0012,
+			TrainingData: settings.MultiNaca0012,
+			TestingData:  settings.Naca0012Sweep,
 			Algorithm:    settings.MulNetTwoFifty,
 			Weight:       settings.NoWeight,
-			Features:     settings.CrossProduction,
+			Features:     settings.Source,
 			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
+			ExtraString:  []string{},
 		},
 	}
 }

@@ -60,6 +60,8 @@ const (
 	LES4                         = "les4"
 	LES4Tenth                    = "les4_tenth"
 	SingleNaca0012               = "single_naca_0012"
+	MultiNaca0012                = "multi_naca_0012"
+	Naca0012Sweep                = "naca_0012_sweep"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -131,6 +133,30 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 	case SingleNaca0012:
 		datasets = []ransuq.Dataset{
 			newNaca0012(0),
+		}
+	case MultiNaca0012:
+		datasets = []ransuq.Dataset{
+			newNaca0012(0),
+			newNaca0012(3),
+			newNaca0012(6),
+			newNaca0012(9),
+			newNaca0012(12),
+		}
+	case Naca0012Sweep:
+		datasets = []ransuq.Dataset{
+			newNaca0012(0),
+			newNaca0012(1),
+			newNaca0012(2),
+			newNaca0012(3),
+			newNaca0012(4),
+			newNaca0012(5),
+			newNaca0012(6),
+			newNaca0012(7),
+			newNaca0012(8),
+			newNaca0012(9),
+			newNaca0012(10),
+			newNaca0012(11),
+			newNaca0012(12),
 		}
 	}
 
