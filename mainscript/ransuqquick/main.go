@@ -50,54 +50,6 @@ func main() {
 	if doprofile {
 		defer profile.Start(profile.CPUProfile).Stop()
 	}
-	/*
-		testTrainPairs := [][2]string{
-			//{settings.SingleFlatplate, settings.NoDataset},
-			//{settings.MultiFlatplate, settings.FlatplateSweep},
-			//{settings.MultiFlatplate, settings.NoDataset},
-			//{settings.MultiFlatplateBL, settings.FlatplateSweep},
-			//{settings.MultiFlatplateBL, settings.SingleFlatplate},
-			//{settings.SingleRae, settings.SingleRae},
-			//{settings.SyntheticFlatplateProduction, settings.FlatplateSweep},
-			//{settings.MultiAndSynthFlatplate, settings.FlatplateSweep},
-			//{settings.MultiAndSynthFlatplate, settings.NoDataset},
-			//{settings.MultiAndSynthFlatplate, settings.SingleFlatplate},
-			//{settings.LES4, settings.NoDataset},
-			//{settings.LES4Tenth, settings.NoDataset},
-			{settings.LES4Tenth, settings.SingleFlatplate},
-		}
-		algorithms := []string{
-			"net_2_50",
-			//"net_1_50",
-			//settings.MulNetTwoFifty,
-		}
-		weights := []string{"none"}
-		features := []string{
-			//"nondim_production",
-			//"nondim_production_log",
-			//"nondim_production_logchi",
-			//"nondim_destruction",
-			//settings.NondimCrossProduction,
-			//"nondim_source",
-			//settings.Production,
-			//settings.CrossProduction,
-			//"destruction",
-			//settings.FwLES,
-			settings.FwLES2,
-		}
-		convergence := []string{
-			//settings.StandardTraining,
-			//settings.FiveKIter,
-			settings.TenKIter,
-		}
-
-		extraStrings := []string{
-			//settings.NoExtraStrings,
-			settings.FlatplateBlOnlyCutoff,
-		}
-
-		//convergence := []string{settings.QuickTraining}
-	*/
 
 	caller := driver.Serial{}
 
@@ -136,37 +88,6 @@ func main() {
 		sets = append(sets, set)
 	}
 
-	/*
-		for _, pair := range testTrainPairs {
-			for _, feature := range features {
-				for _, weight := range weights {
-					for _, alg := range algorithms {
-						for _, conv := range convergence {
-							//for _, extraString := range extraStrings {
-							set, err := settings.GetSettings(
-								pair[0],
-								pair[1],
-								feature,
-								weight,
-								alg,
-								conv,
-								caller,
-								extraStrings, // Need to pass all of them because don't want to double do training
-							)
-							if err != nil {
-								panic(err)
-							}
-							sets = append(sets, set)
-
-							if alg == settings.MulNetTwoFifty {
-								set.Trainer.InputScaler = mlalg.MulScaler{set.Trainer.InputScaler}
-							}
-						}
-					}
-				}
-			}
-		}
-	*/
 	scheduler := ransuq.NewLocalScheduler()
 	errs := ransuq.MultiTurb(sets, scheduler)
 
