@@ -62,6 +62,7 @@ const (
 	SingleNaca0012               = "single_naca_0012"
 	MultiNaca0012                = "multi_naca_0012"
 	Naca0012Sweep                = "naca_0012_sweep"
+	PressureGradientMulti        = "pressure_gradient_multi"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -70,17 +71,17 @@ const (
 func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error) {
 	var datasets []ransuq.Dataset
 
-	flatplate3_06 := newFlatplate(3e6, "med", "atwall")
-	flatplate4_06 := newFlatplate(4e6, "med", "atwall")
-	flatplate5_06 := newFlatplate(5e6, "med", "atwall")
-	flatplate6_06 := newFlatplate(6e6, "med", "atwall")
-	flatplate7_06 := newFlatplate(7e6, "med", "atwall")
+	flatplate3_06 := newFlatplate(3e6, 0, "med", "atwall")
+	flatplate4_06 := newFlatplate(4e6, 0, "med", "atwall")
+	flatplate5_06 := newFlatplate(5e6, 0, "med", "atwall")
+	flatplate6_06 := newFlatplate(6e6, 0, "med", "atwall")
+	flatplate7_06 := newFlatplate(7e6, 0, "med", "atwall")
 
-	flatplate3_06_BL := newFlatplate(3e6, "med", "justbl")
+	flatplate3_06_BL := newFlatplate(3e6, 0, "med", "justbl")
 	//flatplate4_06_BL := newFlatplate(4e6, "med", "justbl")
-	flatplate5_06_BL := newFlatplate(5e6, "med", "justbl")
+	flatplate5_06_BL := newFlatplate(5e6, 0, "med", "justbl")
 	//flatplate6_06_BL := newFlatplate(6e6, "med", "justbl")
-	flatplate7_06_BL := newFlatplate(7e6, "med", "justbl")
+	flatplate7_06_BL := newFlatplate(7e6, 0, "med", "justbl")
 
 	flatplateSweep := []ransuq.Dataset{flatplate3_06, flatplate4_06, flatplate5_06, flatplate6_06, flatplate7_06}
 	multiFlatplate := []ransuq.Dataset{flatplate3_06, flatplate5_06, flatplate7_06}
@@ -100,7 +101,7 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 	case MultiFlatplateBL:
 		datasets = []ransuq.Dataset{flatplate3_06_BL, flatplate5_06_BL, flatplate7_06_BL}
 	case ExtraFlatplate:
-		datasets = []ransuq.Dataset{newFlatplate(1e6, "med", "atwall"), newFlatplate(2e6, "med", "atwall"), newFlatplate(1.5e6, "med", "atwall")}
+		datasets = []ransuq.Dataset{newFlatplate(1e6, 0, "med", "atwall"), newFlatplate(2e6, 0, "med", "atwall"), newFlatplate(1.5e6, 0, "med", "atwall")}
 	case FlatplateSweep:
 		datasets = flatplateSweep
 	case SyntheticFlatplateProduction:
@@ -158,6 +159,19 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newNaca0012(11),
 			newNaca0012(12),
 		}
+	case PressureGradientMulti:
+		datasets = []ransuq.Dataset{
+			newFlatplate(5e6, 30, "med", "atwall"),
+			newFlatplate(5e6, 10, "med", "atwall"),
+			newFlatplate(5e6, 3, "med", "atwall"),
+			newFlatplate(5e6, 1, "med", "atwall"),
+			newFlatplate(5e6, .1, "med", "atwall"),
+			newFlatplate(5e6, 0, "med", "atwall"),
+			newFlatplate(5e6, -.1, "med", "atwall"),
+			newFlatplate(5e6, -1, "med", "atwall"),
+			newFlatplate(5e6, -3, "med", "atwall"),
+			newFlatplate(5e6, -10, "med", "atwall"),
+		}
 	}
 
 	for _, dataset := range datasets {
@@ -174,13 +188,27 @@ type FlatplateDataset struct {
 	datawrapper.SU2
 }
 
-func newFlatplate(re float64, fidelity string, ignoreType string) ransuq.Dataset {
-	basepath := filepath.Join(gopath, "data", "ransuq", "flatplate")
-	baseconfig := filepath.Join(basepath, "base_flatplate_config.cfg")
+// re = reynolds number
+// cp = coefficient of pressure -- delta p * length * dynamic pressure ()
+// uses farfield pressure for zero cp, and symmetry up top for non-zero cp
+func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ransuq.Dataset {
+	var basepath, baseconfig string
+	flatplateBase := filepath.Join(gopath, "data", "ransuq", "flatplate")
+	if cp == 0 {
+		basepath = flatplateBase
+		baseconfig = filepath.Join(basepath, "base_flatplate_config.cfg")
+	} else {
+		basepath = filepath.Join(flatplateBase, "pressuregradient")
+		baseconfig = filepath.Join(basepath, "base", "base_flatplate_config.cfg")
+	}
 
 	restring := strconv.FormatFloat(re, 'g', -1, 64)
+	cpstring := strconv.FormatFloat(cp, 'g', -1, 64)
 
 	name := "Flatplate_Re_" + restring
+	if cp != 0 {
+		name += "_Cp_" + cpstring
+	}
 
 	// Change the + in the exponent to an underscore
 	b := []byte(name)
@@ -222,7 +250,7 @@ func newFlatplate(re float64, fidelity string, ignoreType string) ransuq.Dataset
 
 	// set mesh file to be the base mesh file but use relative path
 
-	fullMeshFilename := filepath.Join(basepath, drive.Options.MeshFilename)
+	fullMeshFilename := filepath.Join(flatplateBase, drive.Options.MeshFilename)
 
 	relMeshFilename, err := filepath.Rel(wd, fullMeshFilename)
 	if err != nil {
@@ -234,20 +262,36 @@ func newFlatplate(re float64, fidelity string, ignoreType string) ransuq.Dataset
 	drive.Options.ReynoldsNumber = re
 
 	drive.Options.RefTemperature = drive.Options.FreestreamTemperature
+
 	//get the freestream pressure and density
-	pressure, density := nondimensionalize.Values(drive.Options.FreestreamTemperature, drive.Options.ReynoldsNumber, drive.Options.MachNumber, drive.Options.GasConstant, drive.Options.ReynoldsLength, drive.Options.GammaValue)
+	gamma := drive.Options.GammaValue
+	gasConst := drive.Options.GasConstant
+	pressure, density := nondimensionalize.Values(drive.Options.FreestreamTemperature, drive.Options.ReynoldsNumber, drive.Options.MachNumber, gasConst, drive.Options.ReynoldsLength, gamma)
 	drive.Options.RefPressure = pressure
 	drive.Options.RefDensity = density
-	totalT := nondimensionalize.TotalTemperature(drive.Options.FreestreamTemperature, drive.Options.MachNumber, drive.Options.GammaValue)
-	totalP := nondimensionalize.TotalPressure(pressure, drive.Options.MachNumber, drive.Options.GammaValue)
+	totalT := nondimensionalize.TotalTemperature(drive.Options.FreestreamTemperature, drive.Options.MachNumber, gamma)
+	totalP := nondimensionalize.TotalPressure(pressure, drive.Options.MachNumber, gamma)
 	totalTString := strconv.FormatFloat(totalT, 'g', 16, 64)
 	totalPString := strconv.FormatFloat(totalP, 'g', 16, 64)
 	//pString := strconv.FormatFloat(pressure, 'g', 16, 64)
 	//drive.Options.MarkerInlet = &su2types.Inlet{"( inlet, " + totalTString + ", " + totalPString + ", 1.0, 0.0, 0.0 )"}
 	drive.Options.MarkerInlet = &su2types.Inlet{Strings: []string{"inlet", totalTString, totalPString, "1", "0", "0"}}
-	drive.Options.MarkerOutlet = &su2types.StringDoubleList{
-		Strings: []string{"outlet", "farfield"},
-		Doubles: []float64{pressure, pressure},
+	if cp == 0 {
+		drive.Options.MarkerOutlet = &su2types.StringDoubleList{
+			Strings: []string{"outlet", "farfield"},
+			Doubles: []float64{pressure, pressure},
+		}
+	} else {
+		inletVelocity := drive.Options.MachNumber * nondimensionalize.SpeedOfSound(gamma, gasConst, drive.Options.FreestreamTemperature)
+		plateLength := 2.0
+		dynamicPressure := (1.0 / 2) * density * inletVelocity * inletVelocity * plateLength
+		inletPressure := pressure
+		outletPressure := inletPressure + cp*dynamicPressure
+		drive.Options.MarkerSym = []string{"symmetry", "farfield"}
+		drive.Options.MarkerOutlet = &su2types.StringDoubleList{
+			Strings: []string{"outlet"},
+			Doubles: []float64{outletPressure},
+		}
 	}
 	//drive.Options.MarkerOutlet = &su2types.StringDoubleList{"( outlet, " + pString + ", farfield, " + pString + " )"}
 

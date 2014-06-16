@@ -454,10 +454,22 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{settings.FlatplateBlOnlyCutoff},
 			},
 		*/
+		/*
+			{
+				Name:         "Single NACA 0012 test case",
+				TrainingData: settings.MultiNaca0012,
+				TestingData:  settings.Naca0012Sweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
 		{
-			Name:         "Single NACA 0012 test case",
-			TrainingData: settings.MultiNaca0012,
-			TestingData:  settings.Naca0012Sweep,
+			Name:         "Pressure driven wall",
+			TrainingData: settings.PressureGradientMulti,
+			TestingData:  settings.NoDataset,
 			Algorithm:    settings.MulNetTwoFifty,
 			Weight:       settings.NoWeight,
 			Features:     settings.Source,
