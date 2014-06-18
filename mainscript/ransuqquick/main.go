@@ -51,9 +51,7 @@ func main() {
 		defer profile.Start(profile.CPUProfile).Stop()
 	}
 
-	caller := driver.Serial{}
-
-	//nRuns := len(testTrainPairs) * len(algorithms) * len(weights) * len(features) * len(convergence)
+	caller := driver.Serial{} // Run the SU^2 cases in serial
 
 	// Construct all of the datasets
 
@@ -337,7 +335,16 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{settings.NoExtraStrings},
 			},
 		*/
-
+		{
+			Name:         "Learn source with all the variables",
+			TrainingData: settings.MultiFlatplate,
+			TestingData:  settings.NoDataset,
+			Algorithm:    settings.MulNetTwoFifty,
+			Weight:       settings.NoWeight,
+			Features:     settings.SourceAll,
+			Convergence:  settings.TenKIter,
+			ExtraString:  []string{settings.NoExtraStrings},
+		},
 		/*
 			{
 				Name:         "Nondim CrossProduction for single flatplate",
@@ -387,15 +394,53 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{},
 			},
 		*/
-		{
-			Name:         "Pressure driven wall",
-			TrainingData: settings.PressureGradientMulti,
-			TestingData:  settings.NoDataset,
-			Algorithm:    settings.MulNetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.Source,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{},
-		},
+		/*
+			{
+				Name:         "Single NACA 0012 test case",
+				TrainingData: settings.MultiNaca0012,
+				TestingData:  settings.Naca0012Sweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
+		/*
+			{
+				Name:         "Pressure driven wall",
+				TrainingData: settings.PressureGradientMulti,
+				TestingData:  settings.NoDataset,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
+		/*
+			{
+				Name:         "Pressure driven wall",
+				TrainingData: settings.PressureGradientMultiSmall,
+				TestingData:  settings.NoDataset,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
+		/*
+			{
+				Name:         "Pressure driven wall",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.NoDataset,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.SourceOmegaNNondim,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
 	}
 }

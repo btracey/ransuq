@@ -15,6 +15,14 @@ var identityFunc func([]float64) (float64, error) = func(d []float64) (float64, 
 	return d[0], nil
 }
 
+// divides the second input by the first
+var nondimensionalizer = func([]float64) (float64, error) {
+	if len(d) != 2 {
+		return math.NaN(), fmt.Errorf("Length of data is not 2")
+	}
+	return d[1] / d[0], nil
+}
+
 var logFunc func([]float64) (float64, error) = func(d []float64) (float64, error) {
 	if len(d) != 1 {
 		return math.NaN(), fmt.Errorf("Length of data is not 1")

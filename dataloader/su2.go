@@ -3,6 +3,7 @@ package dataloader
 import (
 	"bytes"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -83,6 +84,22 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 	"DVDY": &FieldTransformer{
 		InternalNames: []string{suDVDY},
 		Transformer:   identityFunc,
+	},
+	"DUDXBar": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", suDUDX},
+		Transformer:   nondimensionalizer,
+	},
+	"DUDYBar": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", suDUDY},
+		Transformer:   nondimensionalizer,
+	},
+	"DVDXBar": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", suDVDX},
+		Transformer:   nondimensionalizer,
+	},
+	"DVDYBar": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", suDVDY},
+		Transformer:   nondimensionalizer,
 	},
 	"YPlus": &FieldTransformer{
 		InternalNames: []string{"Y_Plus"},
@@ -223,13 +240,31 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"OmegaBar"},
 		Transformer:   logFunc,
 	},
-	"DNuHatDXBar": &FieldTransformer{
+	"DNuHatDX": &FieldTransformer{
 		InternalNames: []string{"DNuTildeDX_0"},
 		Transformer:   identityFunc,
 	},
-	"DNuHatDYBar": &FieldTransformer{
+	"DNuHatDY": &FieldTransformer{
 		InternalNames: []string{"DNuTildeDX_1"},
 		Transformer:   identityFunc,
+	},
+	"DNuHatDXBar": &FieldTransformer{
+		InternalNames: []string{"DNuTildeDX_0", "SourceNondimer"},
+		Transformer: func(s []float64) (float64, error) {
+			if len(s) != 2 {
+				return nil, errors.New("wrong number of options")
+			}
+			return s[0] / math.Sqrt(s[1])
+		},
+	},
+	"DNuHatDYBar": &FieldTransformer{
+		InternalNames: []string{"DNuTildeDX_1", "SourceNondimer"},
+		Transformer: func(s []float64) (float64, error) {
+			if len(s) != 2 {
+				return nil, errors.New("wrong number of options")
+			}
+			return s[0] / math.Sqrt(s[1])
+		},
 	},
 	"NuGradMag": &FieldTransformer{
 		InternalNames: []string{"NuHatGradNorm"},
@@ -247,6 +282,25 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"NuGradNondimer"},
 		Transformer:   identityFunc,
 	},
+	"SourceNondimerAlt": &FieldTransformer{
+		InternalNames: []string{"Omega", "NuHat"},
+		Transformer: func(s []float64) (float64, error) {
+			return s[0]*s[1] + 1e-6, nil // Small number hack
+		},
+	},
+}
+
+// Divide to non-dimensionalize, multiply to redimensionalize
+func nuscale(nu, nuhat float64) float64 {
+	return nu + nuhat
+}
+
+func sourcescale(nu, nuhat, omega float64) float64 {
+	return omega*(nu+nuhat) + 1e-6
+}
+
+func omegascale(nu, nuhat, omega float64) float64 {
+	return sourcescale(nu, nuhat, omega) / nuscale(nu, nuhat)
 }
 
 // SU2 is a type for data from an su2_restart restart file

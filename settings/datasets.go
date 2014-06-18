@@ -63,6 +63,7 @@ const (
 	MultiNaca0012                = "multi_naca_0012"
 	Naca0012Sweep                = "naca_0012_sweep"
 	PressureGradientMulti        = "pressure_gradient_multi"
+	PressureGradientMultiSmall   = "pressure_gradient_multi_small"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -158,6 +159,19 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newNaca0012(10),
 			newNaca0012(11),
 			newNaca0012(12),
+		}
+	case PressureGradientMultiSmall:
+		datasets = []ransuq.Dataset{
+			newFlatplate(5e6, .30, "med", "atwall"),
+			newFlatplate(5e6, .10, "med", "atwall"),
+			newFlatplate(5e6, .3, "med", "atwall"),
+			newFlatplate(5e6, .1, "med", "atwall"),
+			newFlatplate(5e6, .01, "med", "atwall"),
+			newFlatplate(5e6, 0, "med", "atwall"),
+			newFlatplate(5e6, -.01, "med", "atwall"),
+			newFlatplate(5e6, -.1, "med", "atwall"),
+			newFlatplate(5e6, -.3, "med", "atwall"),
+			newFlatplate(5e6, -.10, "med", "atwall"),
 		}
 	case PressureGradientMulti:
 		datasets = []ransuq.Dataset{
@@ -401,6 +415,7 @@ func newAirfoil() ransuq.Dataset {
 }
 
 func newNaca0012(aoa float64) ransuq.Dataset {
+	conv := 3.0
 	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "naca0012")
 	configName := "naca0012.cfg"
 	meshName := "mesh_NACA0012_turb_897x257.su2"
@@ -448,6 +463,8 @@ func newNaca0012(aoa float64) ransuq.Dataset {
 	drive.OptionList["MlTurbModelFile"] = true
 	drive.OptionList["MlTurbModelFeatureset"] = true
 	drive.OptionList["ExtraOutput"] = true
+	drive.Options.ExtIter = 9999
+	drive.Options.ResidualReduction = conv
 
 	// Create an SU2 datawrapper from it
 	return &datawrapper.SU2{
