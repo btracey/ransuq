@@ -323,18 +323,6 @@ func GetCases() []*settingCase {
 			},
 		*/
 
-		/*
-			{
-				Name:         "Learn scaled full source",
-				TrainingData: settings.MultiFlatplate,
-				TestingData:  settings.NoDataset,
-				Algorithm:    settings.MulNetTwoFifty,
-				Weight:       settings.NoWeight,
-				Features:     settings.Source,
-				Convergence:  settings.TenKIter,
-				ExtraString:  []string{settings.NoExtraStrings},
-			},
-		*/
 		{
 			Name:         "Learn source with all the variables",
 			TrainingData: settings.MultiFlatplate,
@@ -345,6 +333,7 @@ func GetCases() []*settingCase {
 			Convergence:  settings.TenKIter,
 			ExtraString:  []string{settings.NoExtraStrings},
 		},
+
 		/*
 			{
 				Name:         "Nondim CrossProduction for single flatplate",
@@ -396,7 +385,7 @@ func GetCases() []*settingCase {
 		*/
 		/*
 			{
-				Name:         "Single NACA 0012 test case",
+				Name:         "NACA 0012 sweep test case",
 				TrainingData: settings.MultiNaca0012,
 				TestingData:  settings.Naca0012Sweep,
 				Algorithm:    settings.MulNetTwoFifty,
@@ -406,6 +395,7 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{},
 			},
 		*/
+
 		/*
 			{
 				Name:         "Pressure driven wall",

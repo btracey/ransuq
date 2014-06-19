@@ -73,7 +73,7 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 		inputs = []string{"SourceOmegaNNondim", "Omega_OmegaNNondim", "Chi", "NuGradMag_OmegaNNondim"}
 		outputs = []string{"Source"}
 	case SourceAll:
-		inputs = []string{"SourceNondimer", "Chi", "NuGradXBar", "NuGradYBar", "DUDXBar", "DUDYBar", "DVDXBar", "DVDYBar"}
+		inputs = []string{"SourceNondimer", "Chi", "DNuHatDXBar", "DNuHatDYBar", "DUDXBar", "DUDYBar", "DVDXBar", "DVDYBar"}
 		outputs = []string{"Source"}
 	case FwLES:
 		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}
