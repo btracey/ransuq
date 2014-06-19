@@ -240,30 +240,22 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"OmegaBar"},
 		Transformer:   logFunc,
 	},
-	"DNuHatDX": &FieldTransformer{
-		InternalNames: []string{"DNuTildeDX_0"},
-		Transformer:   identityFunc,
-	},
-	"DNuHatDY": &FieldTransformer{
-		InternalNames: []string{"DNuTildeDX_1"},
-		Transformer:   identityFunc,
-	},
 	"DNuHatDXBar": &FieldTransformer{
-		InternalNames: []string{"DNuTildeDX_0", "SourceNondimer"},
+		InternalNames: []string{"SourceNondimer", "DNuTildeDX_0"},
 		Transformer: func(s []float64) (float64, error) {
 			if len(s) != 2 {
-				return nil, errors.New("wrong number of options")
+				return math.NaN(), errors.New("wrong number of options")
 			}
-			return s[0] / math.Sqrt(s[1])
+			return s[1] / math.Sqrt(s[0]), nil
 		},
 	},
 	"DNuHatDYBar": &FieldTransformer{
-		InternalNames: []string{"DNuTildeDX_1", "SourceNondimer"},
+		InternalNames: []string{"SourceNondimer", "DNuTildeDX_1"},
 		Transformer: func(s []float64) (float64, error) {
 			if len(s) != 2 {
-				return nil, errors.New("wrong number of options")
+				return math.NaN(), errors.New("wrong number of options")
 			}
-			return s[0] / math.Sqrt(s[1])
+			return s[1] / math.Sqrt(s[0]), nil
 		},
 	},
 	"NuGradMag": &FieldTransformer{
