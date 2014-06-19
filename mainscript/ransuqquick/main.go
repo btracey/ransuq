@@ -383,18 +383,17 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{},
 			},
 		*/
-		/*
-			{
-				Name:         "NACA 0012 sweep test case",
-				TrainingData: settings.MultiNaca0012,
-				TestingData:  settings.Naca0012Sweep,
-				Algorithm:    settings.MulNetTwoFifty,
-				Weight:       settings.NoWeight,
-				Features:     settings.Source,
-				Convergence:  settings.TenKIter,
-				ExtraString:  []string{},
-			},
-		*/
+
+		{
+			Name:         "NACA 0012 sweep test case",
+			TrainingData: settings.Naca0012Sweep,
+			TestingData:  settings.Naca0012Sweep,
+			Algorithm:    settings.MulNetTwoFifty,
+			Weight:       settings.NoWeight,
+			Features:     settings.Source,
+			Convergence:  settings.TenKIter,
+			ExtraString:  []string{},
+		},
 
 		/*
 			{
