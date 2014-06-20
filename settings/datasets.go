@@ -164,14 +164,13 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		datasets = []ransuq.Dataset{
 			newFlatplate(5e6, .30, "med", "atwall"),
 			newFlatplate(5e6, .10, "med", "atwall"),
-			newFlatplate(5e6, .3, "med", "atwall"),
-			newFlatplate(5e6, .1, "med", "atwall"),
+			newFlatplate(5e6, .03, "med", "atwall"),
 			newFlatplate(5e6, .01, "med", "atwall"),
 			newFlatplate(5e6, 0, "med", "atwall"),
 			newFlatplate(5e6, -.01, "med", "atwall"),
-			newFlatplate(5e6, -.1, "med", "atwall"),
-			newFlatplate(5e6, -.3, "med", "atwall"),
+			newFlatplate(5e6, -.03, "med", "atwall"),
 			newFlatplate(5e6, -.10, "med", "atwall"),
+			newFlatplate(5e6, -.30, "med", "atwall"),
 		}
 	case PressureGradientMulti:
 		datasets = []ransuq.Dataset{
@@ -314,6 +313,9 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 		drive.Options.ResidualReduction = 0.2
 	case "med":
 		drive.Options.ResidualReduction = 5
+		if cp != 0 {
+			drive.Options.ResidualReduction = 3
+		}
 	case "high":
 		drive.Options.ResidualReduction = 7
 	default:
