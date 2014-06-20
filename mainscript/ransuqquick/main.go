@@ -322,17 +322,18 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{settings.NoExtraStrings},
 			},
 		*/
-
-		{
-			Name:         "Learn source with all the variables",
-			TrainingData: settings.MultiFlatplate,
-			TestingData:  settings.NoDataset,
-			Algorithm:    settings.MulNetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.SourceAll,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{settings.NoExtraStrings},
-		},
+		/*
+			{
+				Name:         "Learn source with all the variables",
+				TrainingData: settings.MultiFlatplate,
+				TestingData:  settings.NoDataset,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.SourceAll,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{settings.NoExtraStrings},
+			},
+		*/
 
 		/*
 			{
@@ -383,17 +384,18 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{},
 			},
 		*/
-
-		{
-			Name:         "NACA 0012 sweep test case",
-			TrainingData: settings.Naca0012Sweep,
-			TestingData:  settings.Naca0012Sweep,
-			Algorithm:    settings.MulNetTwoFifty,
-			Weight:       settings.NoWeight,
-			Features:     settings.Source,
-			Convergence:  settings.TenKIter,
-			ExtraString:  []string{},
-		},
+		/*
+			{
+				Name:         "NACA 0012 sweep test case",
+				TrainingData: settings.Naca0012Sweep,
+				TestingData:  settings.Naca0012Sweep,
+				Algorithm:    settings.MulNetTwoFifty,
+				Weight:       settings.NoWeight,
+				Features:     settings.Source,
+				Convergence:  settings.TenKIter,
+				ExtraString:  []string{},
+			},
+		*/
 
 		/*
 			{
@@ -407,18 +409,18 @@ func GetCases() []*settingCase {
 				ExtraString:  []string{},
 			},
 		*/
-		/*
-			{
-				Name:         "Pressure driven wall",
-				TrainingData: settings.PressureGradientMultiSmall,
-				TestingData:  settings.NoDataset,
-				Algorithm:    settings.MulNetTwoFifty,
-				Weight:       settings.NoWeight,
-				Features:     settings.Source,
-				Convergence:  settings.TenKIter,
-				ExtraString:  []string{},
-			},
-		*/
+
+		{
+			Name:         "Pressure driven wall",
+			TrainingData: settings.PressureGradientMultiSmall,
+			TestingData:  settings.PressureGradientMultiSmall,
+			Algorithm:    settings.MulNetTwoFifty,
+			Weight:       settings.NoWeight,
+			Features:     settings.Source,
+			Convergence:  settings.TenKIter,
+			ExtraString:  []string{},
+		},
+
 		/*
 			{
 				Name:         "Pressure driven wall",
