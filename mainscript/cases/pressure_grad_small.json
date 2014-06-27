@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Pressure driven wall",
+		"TrainingData": "pressure_gradient_multi_small",
+		"TestingData":  "pressure_gradient_multi_small",
+		"Algorithm":    "mul_net_2_50",
+		"Weight":       "none",
+		"Features":     "source",
+		"Convergence":  "10kiter",
+		"ExtraString":  "none",
+	},
+]
