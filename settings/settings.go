@@ -36,7 +36,7 @@ func GetSettings(
 	for i, set := range extraStringsSetting {
 		extraStrings, err := GetSU2ExtraStrings(set)
 		if err != nil {
-			return nil, errors.New("text")
+			return nil, errors.New("error getting extra strings: " + err.Error())
 		}
 		// For the testing data, loop over the datasets to see if they are SU2 sets.
 		// If so, pass the extra strings on

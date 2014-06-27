@@ -24,7 +24,7 @@ func GetWeight(weight string) (weightFeatures []string, weightFunc func([]float6
 	default:
 		return nil, nil, Missing{
 			Prefix:  "weight setting not found",
-			Options: sortedAlgorithm,
+			Options: sortedWeights,
 		}
 	case "none":
 		return nil, nil, nil
