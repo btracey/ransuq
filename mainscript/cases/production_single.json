@@ -1,0 +1,12 @@
+[
+{
+	"Name":         "Nondim Production for single flatplate",
+	"TrainingData": "single_flatplate",
+	"TestingData":  "single_rae",
+	"Algorithm":    "net_2_50",
+	"Weight":       "none",
+	"Features":     "nondim_production",
+	"Convergence":  "10kiter",
+	"ExtraString":  ["none"]
+}
+]
