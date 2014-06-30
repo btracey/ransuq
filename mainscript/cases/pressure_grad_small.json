@@ -7,6 +7,6 @@
 		"Weight":       "none",
 		"Features":     "source",
 		"Convergence":  "10kiter",
-		"ExtraString":  "none",
-	},
+		"ExtraString":  ["none"]
+	}
 ]
