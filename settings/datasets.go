@@ -314,7 +314,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	case "med":
 		drive.Options.ResidualReduction = 5
 		if cp != 0 {
-			drive.Options.ResidualReduction = 3
+			drive.Options.ResidualReduction = 4
 		}
 	case "high":
 		drive.Options.ResidualReduction = 7
