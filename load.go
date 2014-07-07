@@ -211,6 +211,17 @@ func denseLoadAll(datasets []Dataset, inputFeatures, outputFeatures, weightFeatu
 
 }
 
+// reduceError returns the slice of errors if any of the errors are non-nil
+// and nil if all of the errors are nil
+func reduceError(errs []error) []error {
+	for i := range errs {
+		if errs[i] != nil {
+			return errs
+		}
+	}
+	return nil
+}
+
 // LoadTrainingData returns
 func LoadTrainingData(datasets []Dataset, loadStyle LoadStyle, inputFeatures, outputFeatures, weightFeatures []string, weightFunc func([]float64) float64) (
 	inputs, outputs common.RowMatrix, weights []float64, err error) {
