@@ -92,8 +92,9 @@ func GetSettings(
 		OutputFeatures: outputs,
 		WeightFeatures: weights,
 		WeightFunc:     f,
-		Savepath:       filepath.Join(gopath, "results", "ransuq", features, weightSet, algorithm, trainSettings, training),
-		Trainer:        trainer,
+		Savepath:       filepath.Join(gopath, "results", "ransuq", training, features, weightSet, algorithm, trainSettings),
+		//Savepath:       filepath.Join(gopath, "results", "ransuq", features, weightSet, algorithm, trainSettings, training),
+		Trainer: trainer,
 	}
 	return set, nil
 }
