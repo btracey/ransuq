@@ -8,5 +8,25 @@
 		"Features":     "source",
 		"Convergence":  "10kiter",
 		"ExtraString":  ["none"]
+	},
+	{
+		"Name":         "Pressure driven wall",
+		"TrainingData": "pressure_gradient_multi_small",
+		"TestingData":  "pressure_gradient_multi_small",
+		"Algorithm":    "mul_net_2_100",
+		"Weight":       "none",
+		"Features":     "source",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["none"]
+	},
+	{
+		"Name":         "Pressure driven wall",
+		"TrainingData": "pressure_gradient_multi_small",
+		"TestingData":  "pressure_gradient_multi_small",
+		"Algorithm":    "mul_net_3_50",
+		"Weight":       "none",
+		"Features":     "source",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["none"]
 	}
 ]
