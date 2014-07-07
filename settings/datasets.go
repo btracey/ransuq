@@ -419,7 +419,7 @@ func newAirfoil() ransuq.Dataset {
 func newNaca0012(aoa float64) ransuq.Dataset {
 	conv := 3.0
 	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "naca0012")
-	configName := "naca0012.cfg"
+	configName := "turb_NACA0012.cfg"
 	meshName := "mesh_NACA0012_turb_897x257.su2"
 	baseconfig := filepath.Join(basepath, "ransuqbase", configName)
 	meshFile := filepath.Join(basepath, "ransuqbase", meshName)
