@@ -115,42 +115,6 @@ func (d *DatasetRunner) Done() DatasetFinished {
 	}
 }
 
-/*
-// trueDatasetGenerator sends out all the data sets to be run
-type trueDatasetRunner struct {
-	Datasets []Dataset
-}
-
-func (t *trueDatasetGenerator) Send(c chan Run) {
-	for i, dataset := range t.Datasets {
-		// First, check if the data is actually a generatable
-		generatable, ok := runner.Set.(Generatable)
-		if !ok {
-			id := runner.Set.ID()
-			// Data was not a generatable. Record that that was so, and send it
-			// as completed
-			log.Printf("%v is not a generatable. Sending completion notice.", runner.Set.ID())
-			doneChan <- genComplete{ID: id}
-		}
-		// It is a generatable, but it may be have already been generated. If so,
-		// mark it as completed
-		if generatable.Generated() {
-			id := runner.Set.ID()
-			log.Printf("%v has already been generated. Sending completion notice", runner.Set.ID())
-			doneChan <- genComplete{ID: id}
-		}
-		// Otherwise, send it to be generated
-		outChan <- generatable
-	}
-	// All of the training and testing data was sent, so close the channel
-	close(outChan)
-}
-
-func (d *trueDatasetGenerator) Receive(mlRunChan) {
-
-}
-*/
-
 // MultiTurb runs a list of cases
 // TODO: Needs to be some form of cluster calls
 func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
@@ -374,6 +338,7 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 				continue
 			}
 			log.Println("Sending case to comparison: ", gen.ID())
+			// This will be read in below in the loop over data
 			go func() { g.In <- gen }()
 		}
 
@@ -388,6 +353,15 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 			}
 			postprocessWg.Add(1)
 			go func(i int) {
+				// Right here is where the extra postprocessing stuff needs to be added
+
+				// Need to load in the extra data
+				// make comparison plots
+
+				//loader, ok := gf.Generatable.()
+
+				//savepath := mlRun.Savepath
+
 				p, ok := gf.Generatable.(PostProcessor)
 				if ok {
 					fmt.Println("Launching postprocess: " + gf.ID())
@@ -421,7 +395,6 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 		postErr := postprocess(scalePredictor, testDone.Settings)
 		testDone.postprocessErr = postErr
 	}()
-	runtime.GC()
 	fmt.Println("Main postprocess routine reached call to wait")
 	wg.Wait()
 	fmt.Println("Main postprocess routine finished call to wait")

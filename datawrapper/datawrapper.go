@@ -3,13 +3,13 @@
 package datawrapper
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/dataloader"
-	"github.com/btracey/su2tools/config"
 	"github.com/btracey/su2tools/config/enum"
 	"github.com/btracey/su2tools/driver"
 
@@ -85,24 +85,28 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 func (su *SU2) Generated() bool {
 	_ = ransuq.Comparable(su)
 
-	status := su.Driver.Status()
-	if status == driver.Computed {
-		return true
-	}
+	return su.Driver.IsComputed()
 
-	fmt.Println("Not computed because: ", status)
-
-	if status == driver.UnequalOptions {
-		f := filepath.Join(su.Driver.Wd, su.Driver.Config)
-		otherOptions, _, err := config.ReadFromFile(f)
-		if err != nil {
-			panic(err)
+	/*
+		status := su.Driver.Status()
+		if status == driver.Computed {
+			return true
 		}
+	*/
 
-		fmt.Println(config.Diff(otherOptions, su.Driver.Options))
-	}
+	/*
+		fmt.Println("Not computed because: ", status)
 
-	return false
+		if status == driver.UnequalOptions {
+			f := filepath.Join(su.Driver.Wd, su.Driver.Config)
+			otherOptions, _, err := config.ReadFromFile(f)
+			if err != nil {
+				panic(err)
+			}
+
+			fmt.Println(config.Diff(otherOptions, su.Driver.Options))
+		}
+	*/
 }
 
 func (su *SU2) Run() error {
@@ -126,6 +130,7 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 
 	newName := drive.Name + "_ml" + su.ComparisonNameAddendum
 	newDir := filepath.Join(outLoc, newName)
+	postprocessDir := filepath.Join(newDir, "postprocess")
 	err := os.MkdirAll(newDir, 0700)
 	if err != nil {
 		return nil, err
@@ -197,7 +202,7 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 			Name:        newName,
 		},
 		OrigDriver:              su.Driver,
-		SaveDir:                 newDir,
+		PostprocessDir:          postprocessDir,
 		ComparisonPostprocessor: su.ComparisonPostprocessor,
 	}
 	return newSu2, nil
@@ -206,11 +211,38 @@ func (su *SU2) Comparison(algfile string, outLoc string, featureSet string) (ran
 type SU2ML struct {
 	*SU2
 	OrigDriver              *driver.Driver
-	SaveDir                 string
+	PostprocessDir          string
 	ComparisonPostprocessor Postprocessor
 }
 
 func (su *SU2ML) PostProcess() error {
+
+	status := su.Driver.Status()
+	if status != driver.ComputedSuccessfully {
+		if status == driver.ComputedWithError {
+			return nil
+		}
+		if status != driver.ComputedSuccessfully {
+			return errors.New(status.String())
+		}
+	}
+
+	// Maybe the comparison needs to happen outside in the RANS uq function
+	// so that it has the dataloader stuff out there (don't bring it in here)
+
+	/*
+		// Make a plot for the prediction vs. truth at the final state
+		comparisonDir := filepath.Join(su.PostprocessDir, "comparison")
+
+		err := os.Mkdir(comparisonDir, 0700)
+		if err != nil {
+			return errors.New("error making ml postprocess comparison directory: ", err.Error())
+		}
+	*/
+
+	// Need to collect the prediction and true values. Some how this needs to come
+	// from the dataloader. So far it can
+
 	if su.ComparisonPostprocessor != nil {
 		return su.ComparisonPostprocessor.PostProcess(su)
 	}
@@ -225,12 +257,9 @@ type FlatplatePostprocessor struct {
 }
 
 func (FlatplatePostprocessor) PostProcess(su *SU2ML) error {
-	fmt.Println("In post-process for flatplate ML Case")
-
-	_ = ransuq.PostProcessor(su)
-
 	// Want to call the flat-plate post process
-	path := filepath.Join(su.SaveDir, "postprocess")
+	//path := filepath.Join(su.SaveDir, "postprocess")
+	path := su.PostprocessDir
 	fmt.Println("path is for post process save", path)
 	err := flatplateCompare([]*driver.Driver{su.OrigDriver, su.SU2.Driver}, path)
 	if err != nil {

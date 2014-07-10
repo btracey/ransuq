@@ -59,6 +59,7 @@ const (
 	ExtraFlatplate               = "extra_flatplate"
 	LES4                         = "les4"
 	LES4Tenth                    = "les4_tenth"
+	FwNACA0012                   = "fw_naca0012_shivaji"
 	SingleNaca0012               = "single_naca_0012"
 	MultiNaca0012                = "multi_naca_0012"
 	Naca0012Sweep                = "naca_0012_sweep"
@@ -130,6 +131,16 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 					return (intpoint % 10) != 0
 				},
 				IgnoreNames: []string{"Datapoint"},
+			},
+		}
+	case FwNACA0012:
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location: filepath.Join(gopath, "data", "ransuq", "RANS_Shivaji", "naca0012_fw.dat"),
+				Name:     "NACA_0012_Shivaji",
+				IgnoreFunc: func([]float64) bool {
+					return false
+				},
 			},
 		}
 	case SingleNaca0012:

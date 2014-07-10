@@ -104,11 +104,16 @@ func main() {
 	errs := ransuq.MultiTurb(sets, scheduler)
 	fmt.Println("End ransuq.MultiTurb")
 
+	var haserror bool
 	for _, err := range errs {
 		if err != nil {
+			haserror = true
 			fmt.Println("Finished with error")
 			fmt.Println(errs)
 		}
+	}
+	if haserror {
+		return
 	}
 
 	fmt.Println("Finished without error")
