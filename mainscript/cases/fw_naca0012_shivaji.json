@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "NACA 0012 Fw from Shivaji",
+		"TrainingData": "fw_naca0012_shivaji",
+		"TestingData":  "none",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "fw_les_2",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["none"]
+	}
+]
