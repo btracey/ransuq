@@ -26,8 +26,9 @@ const (
 	Source                 = "source"
 	SourceAll              = "source_all" // Source with all of the variables
 	SourceOmegaNNondim     = "source_omega_n_nondim"
-	FwLES                  = "fw_les"
+	FwHiFi                 = "fw_hifi"
 	FwLES2                 = "fw_les_2"
+	Fw                     = "fw"
 )
 
 var sortedFeatureset []string
@@ -75,9 +76,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case SourceAll:
 		inputs = []string{"SourceNondimer", "Chi", "DNuHatDXBar", "DNuHatDYBar", "DUDXBar", "DUDYBar", "DVDXBar", "DVDYBar"}
 		outputs = []string{"Source"}
-	case FwLES:
+	case FwHiFi:
 		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}
-		outputs = []string{"Fw"}
+		outputs = []string{"FwRealMinusFwRans"}
 	case FwLES2:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"Fw"}

@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/btracey/su2tools/remove_whitespace"
+	"github.com/btracey/turbulence/sa"
 )
 
 var suWallDistance string = "WallDist"
@@ -19,6 +20,7 @@ var suDensity string = "Conservative_1"
 var suRhoU string = "Conservative_2"
 var suRhoV string = "Conservative_3"
 var suKinematicViscosity string = "KinematicViscosity"
+var suTurbKinematicViscosity string = "NuTilde"
 var suDUDX string = "DU_0DX_0"
 var suDUDY string = "DU_0DX_1"
 var suDVDX string = "DU_1DX_0"
@@ -54,7 +56,7 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		Transformer:   identityFunc,
 	},
 	"NuHat": &FieldTransformer{
-		InternalNames: []string{"NuTilde"},
+		InternalNames: []string{suTurbKinematicViscosity},
 		Transformer:   identityFunc,
 	},
 	"WallDistance": &FieldTransformer{
@@ -280,7 +282,25 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 			return s[0]*s[1] + 1e-6, nil // Small number hack
 		},
 	},
+	"Fw": &FieldTransformer{
+		InternalNames: fullSANames,
+		Transformer: func(s []float64) (float64, error) {
+			t := sa.SA{
+				NDim:                2,
+				Nu:                  s[0],
+				NuHat:               s[1],
+				DNuHatDX:            []float64{s[2], s[3]},
+				DUIdXJ:              [][]float64{{s[4], s[5]}, {s[6], s[7]}},
+				WallDistance:        s[8],
+				LimitedWallDistance: 1e-10,
+			}
+			_ = t.Source()
+			return t.Fw, nil
+		},
+	},
 }
+
+var fullSANames = []string{suKinematicViscosity, suTurbKinematicViscosity, "DNuTildeDX_1", "DNuTildeDX_0", suDUDX, suDUDY, suDVDX, suDVDY, suWallDistance}
 
 // Divide to non-dimensionalize, multiply to redimensionalize
 func nuscale(nu, nuhat float64) float64 {

@@ -65,6 +65,7 @@ const (
 	Naca0012Sweep                = "naca_0012_sweep"
 	PressureGradientMulti        = "pressure_gradient_multi"
 	PressureGradientMultiSmall   = "pressure_gradient_multi_small"
+	DNS5n                        = "dns_5n"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -118,6 +119,14 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			&datawrapper.CSV{
 				Location:   filepath.Join(gopath, "data", "ransuq", "LES", "exp4.txt"),
 				Name:       "LES_exp4",
+				IgnoreFunc: func([]float64) bool { return false },
+			},
+		}
+	case DNS5n:
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location:   filepath.Join(gopath, "data", "ransuq", "HiFi", "exp5xn.txt"),
+				Name:       "DNS5n",
 				IgnoreFunc: func([]float64) bool { return false },
 			},
 		}

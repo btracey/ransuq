@@ -3,7 +3,7 @@
 		"Name":         "Multi Flatplate",
 		"TrainingData": "multi_flatplate",
 		"TestingData":  "flatplate_sweep",
-		"Algorithm":    "mul_net_2_50",
+		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "fw_les_2",
 		"Convergence":  "10kiter",

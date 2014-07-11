@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "DNS5n from Karthik",
+		"TrainingData": "dns_5n",
+		"TestingData":  "none",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "fw_hifi",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["none"]
+	}
+]
