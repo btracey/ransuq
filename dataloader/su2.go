@@ -154,6 +154,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"NondimResidual_0"},
 		Transformer:   identityFunc,
 	},
+	"MulProduction": &FieldTransformer{
+		InternalNames: []string{"Mul_Production"},
+		Transformer:   identityFunc,
+	},
 	"NondimProductionMod": &FieldTransformer{
 		InternalNames: []string{"NondimResidual_0", suWallDistance, "Residual_0"},
 		Transformer: func(d []float64) (float64, error) {
@@ -174,6 +178,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"NondimResidual_1"},
 		Transformer:   identityFunc,
 	},
+	"MulDestruction": &FieldTransformer{
+		InternalNames: []string{"Mul_Destruction"},
+		Transformer:   identityFunc,
+	},
 	"NondimDestructionMod": &FieldTransformer{
 		InternalNames: []string{"NondimResidual_1", suWallDistance, "Residual_1"},
 		Transformer: func(d []float64) (float64, error) {
@@ -192,6 +200,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 	},
 	"NondimCrossProduction": &FieldTransformer{
 		InternalNames: []string{"NondimResidual_2"},
+		Transformer:   identityFunc,
+	},
+	"MulCrossProduction": &FieldTransformer{
+		InternalNames: []string{"Mul_CrossProduction"},
 		Transformer:   identityFunc,
 	},
 	"NondimCrossProductionMod": &FieldTransformer{

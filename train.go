@@ -116,8 +116,8 @@ func (s *ScalePredictor) UnmarshalJSON(b []byte) error {
 		testOutputs[i] = make([]float64, len(outputs[i]))
 		s.Predictor.Predict(inputs[i], testOutputs[i])
 		s.OutputScaler.Unscale(testOutputs[i])
-		if !floats.EqualApprox(testOutputs[i], outputs[i], 1e-14) {
-			return errors.New("prediction didn't match stored output")
+		if !floats.EqualApprox(testOutputs[i], outputs[i], 1e-13) {
+			return fmt.Errorf("prediction didn't match stored output. Found %v, expected %v", testOutputs[i], outputs[i])
 		}
 	}
 

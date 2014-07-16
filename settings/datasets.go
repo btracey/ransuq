@@ -49,6 +49,7 @@ var sortedDatasets []string
 
 const (
 	NoDataset                    = "none"
+	NacaPressureFlat             = "naca_pressure_flat"
 	SingleFlatplate              = "single_flatplate"
 	MultiFlatplate               = "multi_flatplate"
 	MultiFlatplateBL             = "multi_flatplate_bl"
@@ -66,6 +67,7 @@ const (
 	PressureGradientMulti        = "pressure_gradient_multi"
 	PressureGradientMultiSmall   = "pressure_gradient_multi_small"
 	DNS5n                        = "dns_5n"
+	FlatPress                    = "flat_press"
 )
 
 // All of these assume that the working directory is $GOPATH, which should be set
@@ -151,6 +153,53 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 					return false
 				},
 			},
+		}
+	case FlatPress:
+		datasets = []ransuq.Dataset{
+			flatplate3_06,
+			flatplate4_06,
+			flatplate5_06,
+			flatplate6_06,
+			flatplate6_06,
+			newFlatplate(5e6, .30, "med", "atwall"),
+			newFlatplate(5e6, .10, "med", "atwall"),
+			newFlatplate(5e6, .03, "med", "atwall"),
+			newFlatplate(5e6, .01, "med", "atwall"),
+			newFlatplate(5e6, 0, "med", "atwall"),
+			newFlatplate(5e6, -.01, "med", "atwall"),
+			newFlatplate(5e6, -.03, "med", "atwall"),
+			newFlatplate(5e6, -.10, "med", "atwall"),
+			newFlatplate(5e6, -.30, "med", "atwall"),
+		}
+	case NacaPressureFlat:
+		datasets = []ransuq.Dataset{
+			newNaca0012(0),
+			newNaca0012(1),
+			newNaca0012(2),
+			newNaca0012(3),
+			newNaca0012(4),
+			newNaca0012(5),
+			newNaca0012(6),
+			newNaca0012(7),
+			newNaca0012(8),
+			newNaca0012(9),
+			newNaca0012(10),
+			newNaca0012(11),
+			newNaca0012(12),
+			flatplate3_06,
+			flatplate4_06,
+			flatplate5_06,
+			flatplate6_06,
+			flatplate6_06,
+			newFlatplate(5e6, .30, "med", "atwall"),
+			newFlatplate(5e6, .10, "med", "atwall"),
+			newFlatplate(5e6, .03, "med", "atwall"),
+			newFlatplate(5e6, .01, "med", "atwall"),
+			newFlatplate(5e6, 0, "med", "atwall"),
+			newFlatplate(5e6, -.01, "med", "atwall"),
+			newFlatplate(5e6, -.03, "med", "atwall"),
+			newFlatplate(5e6, -.10, "med", "atwall"),
+			newFlatplate(5e6, -.30, "med", "atwall"),
 		}
 	case SingleNaca0012:
 		datasets = []ransuq.Dataset{
@@ -347,7 +396,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	switch ignoreType {
 	case "atwall":
 		ignoreNames = []string{"YLoc"}
-		ignoreFunc = func(d []float64) bool { return d[0] < 1e-10 }
+		ignoreFunc = func(d []float64) bool { return d[0] < wallDistIgnore }
 	case "justbl":
 		ignoreNames = []string{"YLoc", "XLoc"}
 		ignoreFunc = func(d []float64) bool {
@@ -431,7 +480,7 @@ func newAirfoil() ransuq.Dataset {
 		Driver:      drive,
 		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
 		IgnoreNames: []string{"YLoc"},
-		IgnoreFunc:  func(d []float64) bool { return d[0] < 1e-10 },
+		IgnoreFunc:  func(d []float64) bool { return d[0] < wallDistIgnore },
 		Name:        name,
 	}
 }
@@ -493,10 +542,12 @@ func newNaca0012(aoa float64) ransuq.Dataset {
 		Driver:      drive,
 		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
 		IgnoreNames: []string{"YLoc"},
-		IgnoreFunc:  func(d []float64) bool { return d[0] < 1e-10 },
+		IgnoreFunc:  func(d []float64) bool { return d[0] < wallDistIgnore },
 		Name:        name,
 	}
 }
+
+const wallDistIgnore = 1e-6
 
 /*
 // LES Dataset for Karthik

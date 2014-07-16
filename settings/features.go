@@ -16,12 +16,15 @@ func init() {
 const (
 	NondimProduction       = "nondim_production"
 	Production             = "production"
+	MulProduction          = "mul_production"
 	NondimProductionLog    = "nondim_production_log"
 	NondimProductionLogChi = "nondim_production_logchi"
 	Destruction            = "destruction"
 	CrossProduction        = "cross_production"
+	MulDestruction         = "mul_destruction"
 	NondimDestruction      = "nondim_destruction"
 	NondimCrossProduction  = "nondim_crossproduction"
+	MulCrossproduction     = "mul_crossproduction"
 	NondimSource           = "nondim_source"
 	Source                 = "source"
 	SourceAll              = "source_all" // Source with all of the variables
@@ -49,6 +52,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case NondimProductionLog:
 		inputs = []string{"Chi_Log", "OmegaBar_Log"}
 		outputs = []string{"NondimProduction"}
+	case MulProduction: // Multiplier of Omega NuHat
+		inputs = []string{"Chi", "OmegaBar"}
+		outputs = []string{"MulProduction"}
 	case NondimProductionLogChi:
 		inputs = []string{"Chi_Log", "OmegaBar"}
 		outputs = []string{"NondimProduction"}
@@ -58,12 +64,18 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case Destruction:
 		inputs = []string{"SourceNondimer", "Chi", "OmegaBar"}
 		outputs = []string{"Destruction"}
+	case MulDestruction:
+		inputs = []string{"Chi", "OmegaBar"}
+		outputs = []string{"MulDestruction"}
 	case NondimCrossProduction:
 		inputs = []string{"Chi", "NuGradMagBar"}
 		outputs = []string{"NondimCrossProduction"}
 	case CrossProduction:
 		inputs = []string{"SourceNondimer", "Chi", "NuGradMagBar"}
 		outputs = []string{"CrossProduction"}
+	case MulCrossproduction:
+		inputs = []string{"Chi", "NuGradMagBar"}
+		outputs = []string{"MulCrossProduction"}
 	case NondimSource:
 		inputs = []string{"Chi", "OmegaBar", "NuGradMagBar"}
 		outputs = []string{"NondimSource"}
@@ -76,12 +88,15 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case SourceAll:
 		inputs = []string{"SourceNondimer", "Chi", "DNuHatDXBar", "DNuHatDYBar", "DUDXBar", "DUDYBar", "DVDXBar", "DVDYBar"}
 		outputs = []string{"Source"}
+	case Fw:
+		inputs = []string{"Chi", "OmegaBar"}
+		outputs = []string{"Fw"}
 	case FwHiFi:
 		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}
 		outputs = []string{"FwRealMinusFwRans"}
 	case FwLES2:
 		inputs = []string{"Chi", "OmegaBar"}
-		outputs = []string{"Fw"}
+		outputs = []string{"FwLes2"}
 	}
 	return inputs, outputs, nil
 }
