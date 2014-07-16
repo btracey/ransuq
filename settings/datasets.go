@@ -190,12 +190,11 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			flatplate4_06,
 			flatplate5_06,
 			flatplate6_06,
-			flatplate6_06,
+			flatplate7_06,
 			newFlatplate(5e6, .30, "med", "atwall"),
 			newFlatplate(5e6, .10, "med", "atwall"),
 			newFlatplate(5e6, .03, "med", "atwall"),
 			newFlatplate(5e6, .01, "med", "atwall"),
-			newFlatplate(5e6, 0, "med", "atwall"),
 			newFlatplate(5e6, -.01, "med", "atwall"),
 			newFlatplate(5e6, -.03, "med", "atwall"),
 			newFlatplate(5e6, -.10, "med", "atwall"),
@@ -257,6 +256,10 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 	}
 
 	for _, dataset := range datasets {
+		if dataset == nil {
+			panic("nil dataset")
+		}
+		fmt.Println(dataset.ID())
 		su2, ok := dataset.(*datawrapper.SU2)
 		if ok {
 			fmt.Println("in setting syscaller")
@@ -321,7 +324,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 
 	baseconfigFile, err := os.Open(baseconfig)
 	if err != nil {
-		return nil
+		panic(err)
 	}
 
 	// Load in the existing
@@ -486,7 +489,7 @@ func newAirfoil() ransuq.Dataset {
 }
 
 func newNaca0012(aoa float64) ransuq.Dataset {
-	conv := 4.5
+	conv := 4.2
 	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "naca0012")
 	configName := "turb_NACA0012.cfg"
 	meshName := "mesh_NACA0012_turb_897x257.su2"
@@ -547,7 +550,7 @@ func newNaca0012(aoa float64) ransuq.Dataset {
 	}
 }
 
-const wallDistIgnore = 1e-6
+const wallDistIgnore = 1e-10
 
 /*
 // LES Dataset for Karthik
