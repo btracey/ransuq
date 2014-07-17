@@ -49,6 +49,7 @@ func main() {
 	case "local":
 		runtime.GOMAXPROCS(runtime.NumCPU() - 2) // leave some CPU open so the computer doesn't crash
 	case "cluster":
+		fmt.Println("Cluster num CPU is", runtime.NumCPU())
 		runtime.GOMAXPROCS(runtime.NumCPU())
 	default:
 		log.Fatal("unknown location")
