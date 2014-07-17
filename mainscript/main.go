@@ -39,7 +39,7 @@ func main() {
 	var doprofile bool
 	flag.BoolVar(&doprofile, "profile", false, "should the code be profiled")
 	var casefile string
-	flag.StringVar(&location, "j", "none", "json file for which case to run")
+	flag.StringVar(&casefile, "j", "none", "json file for which case to run")
 	flag.Parse()
 
 	if casefile == "none" {
