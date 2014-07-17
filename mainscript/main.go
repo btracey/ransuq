@@ -34,16 +34,17 @@ func init() {
 }
 
 func main() {
-
-	if len(os.Args) < 2 {
-		log.Fatal("must specify a json file of the cases to run")
-	}
-
 	var location string
 	flag.StringVar(&location, "location", "local", "where is the code being run (local, cluster)")
 	var doprofile bool
 	flag.BoolVar(&doprofile, "profile", false, "should the code be profiled")
+	var casefile string
+	flag.StringVar(&location, "j", "none", "json file for which case to run")
 	flag.Parse()
+
+	if casefile == "none" {
+		log.Fatal("No case json file specified")
+	}
 
 	switch location {
 	case "local":
@@ -65,7 +66,7 @@ func main() {
 
 	var sets []*ransuq.Settings
 
-	f, err := os.Open(os.Args[1])
+	f, err := os.Open(casefile)
 	if err != nil {
 		log.Fatal("error opening case file:", err)
 	}
