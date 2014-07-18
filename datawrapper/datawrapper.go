@@ -63,6 +63,10 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 	// Load the fields needed to find ingore data
 	ignoreData, err := dataloader.LoadFromDataset(su.IgnoreNames, loader)
 
+	if err != nil {
+		return nil, err
+	}
+
 	nSamples := len(tmpData)
 	nDim := len(tmpData[0])
 
@@ -85,7 +89,13 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 func (su *SU2) Generated() bool {
 	_ = ransuq.Comparable(su)
 
-	return su.Driver.IsComputed()
+	status := su.Driver.Status()
+
+	b := su.Driver.IsComputed(status)
+	if !b {
+		fmt.Println("Not computed: ", b)
+	}
+	return b
 
 	/*
 		status := su.Driver.Status()

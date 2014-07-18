@@ -3,6 +3,7 @@ package settings
 const (
 	NoExtraStrings        = "none"
 	FlatplateBlOnlyCutoff = "FlatplateBlOnlyCutoff"
+	JustBL                = "justbl"
 )
 
 func GetSU2ExtraStrings(strtype string) ([]string, error) {
@@ -15,5 +16,7 @@ func GetSU2ExtraStrings(strtype string) ([]string, error) {
 		return []string{}, nil
 	case FlatplateBlOnlyCutoff:
 		return []string{"FlatplateBlOnlyCutoff"}, nil
+	case JustBL:
+		return []string{"justbl"}, nil
 	}
 }

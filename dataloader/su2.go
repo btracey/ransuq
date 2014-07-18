@@ -288,6 +288,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"NuGradNondimer"},
 		Transformer:   identityFunc,
 	},
+	"IsInBL": &FieldTransformer{
+		InternalNames: []string{"IsInBL"},
+		Transformer:   identityFunc,
+	},
 	"SourceNondimerAlt": &FieldTransformer{
 		InternalNames: []string{"Omega", "NuHat"},
 		Transformer: func(s []float64) (float64, error) {
