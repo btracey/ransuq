@@ -65,6 +65,7 @@ const (
 	SingleNaca0012               = "single_naca_0012"
 	SingleNaca0012Bl             = "single_naca_0012_bl"
 	MultiNaca0012                = "multi_naca_0012"
+	MultiNaca0012Bl              = "multi_naca_0012_bl"
 	Naca0012Sweep                = "naca_0012_sweep"
 	PressureGradientMulti        = "pressure_gradient_multi"
 	PressureGradientMultiSmall   = "pressure_gradient_multi_small"
@@ -246,6 +247,14 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newNaca0012(6, "atwall"),
 			newNaca0012(9, "atwall"),
 			newNaca0012(12, "atwall"),
+		}
+	case MultiNaca0012Bl:
+		datasets = []ransuq.Dataset{
+			newNaca0012(0, "justbl"),
+			newNaca0012(3, "justbl"),
+			newNaca0012(6, "justbl"),
+			newNaca0012(9, "justbl"),
+			newNaca0012(12, "justbl"),
 		}
 	case Naca0012Sweep:
 		datasets = []ransuq.Dataset{

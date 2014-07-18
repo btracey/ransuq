@@ -1,7 +1,7 @@
 [
 	{
 		"Name":         "NACA Pressure Flatplate mul dst bl",
-		"TrainingData": "naca_pressure_flat_bl",
+		"TrainingData": "multi_naca_0012_bl",
 		"TestingData":  "naca_pressure_flat_bl",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
