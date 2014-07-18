@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "NACA Pressure Flatplate mul dst bl",
+		"TrainingData": "multi_flatplate",
+		"TestingData":  "naca_pressure_flat_bl",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "mul_destruction",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["justbl"]
+	}
+]
