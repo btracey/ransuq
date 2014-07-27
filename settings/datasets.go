@@ -69,6 +69,7 @@ const (
 	Naca0012Sweep                = "naca_0012_sweep"
 	PressureGradientMulti        = "pressure_gradient_multi"
 	PressureGradientMultiSmall   = "pressure_gradient_multi_small"
+	PressureBl                   = "pressure_bl"
 	DNS5n                        = "dns_5n"
 	FlatPress                    = "flat_press"
 )
@@ -223,6 +224,17 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			flatplate5_06_BL,
 			flatplate6_06_BL,
 			flatplate7_06_BL,
+			newFlatplate(5e6, .30, "med", "justbl"),
+			newFlatplate(5e6, .10, "med", "justbl"),
+			newFlatplate(5e6, .03, "med", "justbl"),
+			newFlatplate(5e6, .01, "med", "justbl"),
+			newFlatplate(5e6, -.01, "med", "justbl"),
+			newFlatplate(5e6, -.03, "med", "justbl"),
+			newFlatplate(5e6, -.10, "med", "justbl"),
+			newFlatplate(5e6, -.30, "med", "justbl"),
+		}
+	case PressureBl:
+		datasets = []ransuq.Dataset{
 			newFlatplate(5e6, .30, "med", "justbl"),
 			newFlatplate(5e6, .10, "med", "justbl"),
 			newFlatplate(5e6, .03, "med", "justbl"),
