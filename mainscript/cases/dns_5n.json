@@ -2,11 +2,11 @@
 	{
 		"Name":         "DNS5n from Karthik",
 		"TrainingData": "dns_5n",
-		"TestingData":  "none",
+		"TestingData":  "naca_pressure_flat_bl",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
-		"Features":     "fw_hifi",
+		"Features":     "fw_hifi_2",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	}
 ]

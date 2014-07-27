@@ -30,6 +30,7 @@ const (
 	SourceAll              = "source_all" // Source with all of the variables
 	SourceOmegaNNondim     = "source_omega_n_nondim"
 	FwHiFi                 = "fw_hifi"
+	FwHiFi2                = "fw_hifi_2"
 	FwLES2                 = "fw_les_2"
 	Fw                     = "fw"
 )
@@ -93,6 +94,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 		outputs = []string{"Fw"}
 	case FwHiFi:
 		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}
+		outputs = []string{"FwRealMinusFwRans"}
+	case FwHiFi2:
+		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"FwRealMinusFwRans"}
 	case FwLES2:
 		inputs = []string{"Chi", "OmegaBar"}

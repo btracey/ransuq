@@ -12,7 +12,6 @@ import (
 	"strconv"
 
 	"github.com/btracey/su2tools/remove_whitespace"
-	"github.com/btracey/turbulence/sa"
 )
 
 var suWallDistance string = "WallDist"
@@ -299,21 +298,27 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		},
 	},
 	"Fw": &FieldTransformer{
-		InternalNames: fullSANames,
-		Transformer: func(s []float64) (float64, error) {
-			t := sa.SA{
-				NDim:                2,
-				Nu:                  s[0],
-				NuHat:               s[1],
-				DNuHatDX:            []float64{s[2], s[3]},
-				DUIdXJ:              [][]float64{{s[4], s[5]}, {s[6], s[7]}},
-				WallDistance:        s[8],
-				LimitedWallDistance: 1e-10,
-			}
-			_ = t.Source()
-			return t.Fw, nil
-		},
+		InternalNames: []string{"IsInBL"},
+		Transformer:   identityFunc,
 	},
+	/*
+		"Fw": &FieldTransformer{
+			InternalNames: fullSANames,
+			Transformer: func(s []float64) (float64, error) {
+				t := sa.SA{
+					NDim:                2,
+					Nu:                  s[0],
+					NuHat:               s[1],
+					DNuHatDX:            []float64{s[2], s[3]},
+					DUIdXJ:              [][]float64{{s[4], s[5]}, {s[6], s[7]}},
+					WallDistance:        s[8],
+					LimitedWallDistance: 1e-10,
+				}
+				_ = t.Source()
+				return t.Fw, nil
+			},
+		},
+	*/
 }
 
 var fullSANames = []string{suKinematicViscosity, suTurbKinematicViscosity, "DNuTildeDX_1", "DNuTildeDX_0", suDUDX, suDUDY, suDVDX, suDVDY, suWallDistance}
