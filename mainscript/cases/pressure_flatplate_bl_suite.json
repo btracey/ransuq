@@ -7,7 +7,7 @@
 		"Weight":       "none",
 		"Features":     "source",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	},
 	{
 		"Name":         "Multi Flatplate Production",
@@ -17,7 +17,7 @@
 		"Weight":       "none",
 		"Features":     "production",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	},
 	{
 		"Name":         "Multi Flatplate Destruction",
@@ -27,7 +27,7 @@
 		"Weight":       "none",
 		"Features":     "destruction",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	},
 	{
 		"Name":         "Multi Flatplate Mul Production",
@@ -37,7 +37,7 @@
 		"Weight":       "none",
 		"Features":     "mul_production",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	},
 	{
 		"Name":         "Multi Flatplate Mul Destruction",
@@ -47,6 +47,6 @@
 		"Weight":       "none",
 		"Features":     "mul_destruction",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	}
 ]
