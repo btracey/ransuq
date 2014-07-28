@@ -177,19 +177,6 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		}
 	case NacaPressureFlat:
 		datasets = []ransuq.Dataset{
-			newNaca0012(0, "atwall"),
-			newNaca0012(1, "atwall"),
-			newNaca0012(2, "atwall"),
-			newNaca0012(3, "atwall"),
-			newNaca0012(4, "atwall"),
-			newNaca0012(5, "atwall"),
-			newNaca0012(6, "atwall"),
-			newNaca0012(7, "atwall"),
-			newNaca0012(8, "atwall"),
-			newNaca0012(9, "atwall"),
-			newNaca0012(10, "atwall"),
-			newNaca0012(11, "atwall"),
-			newNaca0012(12, "atwall"),
 			flatplate3_06,
 			flatplate4_06,
 			flatplate5_06,
@@ -203,6 +190,19 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newFlatplate(5e6, -.03, "med", "atwall"),
 			newFlatplate(5e6, -.10, "med", "atwall"),
 			newFlatplate(5e6, -.30, "med", "atwall"),
+			newNaca0012(0, "atwall"),
+			newNaca0012(1, "atwall"),
+			newNaca0012(2, "atwall"),
+			newNaca0012(3, "atwall"),
+			newNaca0012(4, "atwall"),
+			newNaca0012(5, "atwall"),
+			newNaca0012(6, "atwall"),
+			newNaca0012(7, "atwall"),
+			newNaca0012(8, "atwall"),
+			newNaca0012(9, "atwall"),
+			newNaca0012(10, "atwall"),
+			newNaca0012(11, "atwall"),
+			newNaca0012(12, "atwall"),
 		}
 	case NacaPressureFlatBl:
 		datasets = []ransuq.Dataset{
