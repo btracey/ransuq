@@ -1,0 +1,52 @@
+[
+	{
+		"Name":         "NacaPressFlat Source",
+		"TrainingData": "naca_pressure_flat_bl",
+		"TestingData":  "naca_pressure_flat_bl",
+		"Algorithm":    "mul_net_2_50",
+		"Weight":       "none",
+		"Features":     "source",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	},
+	{
+		"Name":         "NacaPressFlat Production",
+		"TrainingData": "naca_pressure_flat_bl",
+		"TestingData":  "naca_pressure_flat_bl",
+		"Algorithm":    "mul_net_2_50",
+		"Weight":       "none",
+		"Features":     "production",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	},
+	{
+		"Name":         "NacaPressFlat Destruction",
+		"TrainingData": "naca_pressure_flat_bl",
+		"TestingData":  "naca_pressure_flat_bl",
+		"Algorithm":    "mul_net_2_50",
+		"Weight":       "none",
+		"Features":     "destruction",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	},
+	{
+		"Name":         "NacaPressFlat Mul Production",
+		"TrainingData": "naca_pressure_flat_bl",
+		"TestingData":  "naca_pressure_flat_bl",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "mul_production",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	},
+	{
+		"Name":         "NacaPressFlat Mul Destruction",
+		"TrainingData": "naca_pressure_flat_bl",
+		"TestingData":  "naca_pressure_flat_bl",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "mul_destruction",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	}
+]
