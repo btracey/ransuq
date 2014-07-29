@@ -2,7 +2,7 @@
 	{
 		"Name":         "Multi Flatplate",
 		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "flatplate_sweep_bl",
+		"TestingData":  "flat_pressure_bl",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "fw",

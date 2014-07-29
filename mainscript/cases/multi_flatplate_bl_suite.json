@@ -2,7 +2,7 @@
 	{
 		"Name":         "Multi Flatplate Source",
 		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "naca_pressure_flat_bl",
+		"TestingData":  "flat_pressure_bl",
 		"Algorithm":    "mul_net_2_50",
 		"Weight":       "none",
 		"Features":     "source",
@@ -12,7 +12,7 @@
 	{
 		"Name":         "Multi Flatplate Production",
 		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "naca_pressure_flat_bl",
+		"TestingData":  "flat_pressure_bl",
 		"Algorithm":    "mul_net_2_50",
 		"Weight":       "none",
 		"Features":     "production",
@@ -22,7 +22,7 @@
 	{
 		"Name":         "Multi Flatplate Destruction",
 		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "naca_pressure_flat_bl",
+		"TestingData":  "flat_pressure_bl",
 		"Algorithm":    "mul_net_2_50",
 		"Weight":       "none",
 		"Features":     "destruction",
@@ -32,7 +32,7 @@
 	{
 		"Name":         "Multi Flatplate Mul Production",
 		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "naca_pressure_flat_bl",
+		"TestingData":  "flat_pressure_bl",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "mul_production",
@@ -42,10 +42,20 @@
 	{
 		"Name":         "Multi Flatplate Mul Destruction",
 		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "naca_pressure_flat_bl",
+		"TestingData":  "flat_pressure_bl",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "mul_destruction",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	},
+	{
+		"Name":         "Multi Flatplate Fw",
+		"TrainingData": "multi_flatplate_bl",
+		"TestingData":  "flat_pressure_bl",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "fw",
 		"Convergence":  "10kiter",
 		"ExtraString":  ["BlOnly"]
 	}
