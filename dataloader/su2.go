@@ -298,7 +298,7 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		},
 	},
 	"Fw": &FieldTransformer{
-		InternalNames: []string{"IsInBL"},
+		InternalNames: []string{"Fw"},
 		Transformer:   identityFunc,
 	},
 	/*

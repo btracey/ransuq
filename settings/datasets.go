@@ -55,6 +55,7 @@ const (
 	MultiFlatplate               = "multi_flatplate"
 	MultiFlatplateBL             = "multi_flatplate_bl"
 	FlatplateSweep               = "flatplate_sweep"
+	FlatplateSweepBl             = "flatplate_sweep_bl"
 	SyntheticFlatplateProduction = "synth_flat_prod"
 	MultiAndSynthFlatplate       = "multi_and_sync_flatplate"
 	SingleRae                    = "single_rae"
@@ -113,6 +114,14 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		datasets = []ransuq.Dataset{newFlatplate(1e6, 0, "med", "atwall"), newFlatplate(2e6, 0, "med", "atwall"), newFlatplate(1.5e6, 0, "med", "atwall")}
 	case FlatplateSweep:
 		datasets = flatplateSweep
+	case FlatplateSweepBl:
+		datasets = []ransuq.Dataset{
+			flatplate3_06_BL,
+			flatplate4_06_BL,
+			flatplate5_06_BL,
+			flatplate6_06_BL,
+			flatplate7_06_BL,
+		}
 	case SyntheticFlatplateProduction:
 		datasets = []ransuq.Dataset{synthetic.Production{synthetic.FlatplateBounds}}
 	case MultiAndSynthFlatplate:
