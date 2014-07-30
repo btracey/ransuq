@@ -3,10 +3,18 @@
 package datawrapper
 
 import (
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"image/color"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+
+	"code.google.com/p/plotinum/plot"
+	"code.google.com/p/plotinum/plotter"
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/dataloader"
@@ -278,4 +286,144 @@ func (FlatplatePostprocessor) PostProcess(su *SU2ML) error {
 	fmt.Println("done post-process")
 
 	return nil
+}
+
+type AirfoilPostprocessor struct{}
+
+func (AirfoilPostprocessor) PostProcess(su *SU2ML) error {
+	// Make a Cf plot comparing the ml and the original
+	err := makeCfPlot(su.OrigDriver, su.SU2.Driver, su.PostprocessDir)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("done post-process")
+	return err
+}
+
+func makeCfPlot(orig, ml *driver.Driver, postprocessdir string) error {
+	// Load the surface files for the drivers
+	err := os.MkdirAll(postprocessdir, 0700)
+	if err != nil {
+		return err
+	}
+	filename := filepath.Join(postprocessdir, "cfplot.pdf")
+	// See if the file exists
+	_, err = os.Open(filename)
+	if err == nil {
+		return nil
+	}
+
+	origSurfFilename := filepath.Join(orig.Wd, orig.Options.SurfaceFlowFilename)
+	newSurfFilename := filepath.Join(ml.Wd, ml.Options.SurfaceFlowFilename)
+
+	// hardcode in the csv suffix because it's added automatically by SU2
+	origSurfFilename += ".csv"
+	newSurfFilename += ".csv"
+
+	origSurf, err := os.Open(origSurfFilename)
+	defer origSurf.Close()
+	if err != nil {
+		return err
+	}
+
+	newSurf, err := os.Open(newSurfFilename)
+	defer newSurf.Close()
+	if err != nil {
+		return err
+	}
+
+	oldCfs, err := readCfInfo(origSurf)
+	if err != nil {
+		panic(err)
+	}
+	newCfs, err := readCfInfo(newSurf)
+	if err != nil {
+		panic(err)
+	}
+
+	return plotCfs(oldCfs, newCfs, filename)
+}
+
+func plotCfs(oldCfs, newCfs []float64, filename string) error {
+	// Get the points
+	oldPts := make(plotter.XYs, len(oldCfs))
+	newPts := make(plotter.XYs, len(newCfs))
+	for i := range oldCfs {
+		oldPts[i].X = float64(i)
+		oldPts[i].Y = oldCfs[i]
+		newPts[i].X = float64(i)
+		newPts[i].Y = newCfs[i]
+	}
+
+	p, err := plot.New()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("old pts = ", oldPts)
+	fmt.Println(newPts)
+
+	p.X.Label.Text = "Surface Index"
+	p.Y.Label.Text = "Cf"
+
+	trueScatter, err := plotter.NewLine(oldPts)
+	if err != nil {
+		return err
+	}
+	mlScatter, err := plotter.NewScatter(newPts)
+	if err != nil {
+		return err
+	}
+	trueScatter.LineStyle.Color = color.RGBA{R: 255}
+
+	mlScatter.GlyphStyle.Color = color.RGBA{B: 255}
+	mlScatter.GlyphStyle.Radius = 2
+
+	p.Add(trueScatter)
+	p.Add(mlScatter)
+	p.Legend.Add("True", trueScatter)
+	p.Legend.Add("ML", mlScatter)
+	p.Legend.Top = true
+	p.Legend.Left = true
+
+	if err := p.Save(4, 4, filename); err != nil {
+		return err
+	}
+	return nil
+}
+
+func readCfInfo(r io.Reader) ([]float64, error) {
+	cr := csv.NewReader(r)
+	cr.LazyQuotes = true
+	records, err := cr.ReadAll()
+	if err != nil {
+		fmt.Println("error reading all")
+		panic(err)
+		return nil, err
+	}
+	// Search the first record for the skin friction coefficient
+	idx := -1
+	for i, s := range records[0] {
+		s = strings.TrimSpace(s)
+		s = strings.TrimPrefix(s, "\"")
+		s = strings.TrimSuffix(s, "\"")
+		if s == "Skin_Friction_Coefficient" {
+			idx = i
+			break
+		}
+	}
+	if idx == -1 {
+		return nil, errors.New("cf not found")
+	}
+	// Now, extract all of them in order
+	cfs := make([]float64, len(records[1:]))
+	for i, v := range records[1:] {
+		s := v[idx]
+		s = strings.TrimSpace(s)
+		cfs[i], err = strconv.ParseFloat(s, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return cfs, nil
 }

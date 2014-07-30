@@ -610,6 +610,7 @@ func newNaca0012(aoa float64, ignoreType string) ransuq.Dataset {
 		IgnoreNames: ignoreName,
 		IgnoreFunc:  ignoreFunc,
 		Name:        name,
+		ComparisonPostprocessor: datawrapper.AirfoilPostprocessor{},
 	}
 }
 
