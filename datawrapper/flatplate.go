@@ -105,9 +105,15 @@ func flatplateCompare(drivers []*driver.Driver, resultLocation string) error {
 	if err != nil {
 		return err
 	}
-	err = p.Save(4, 4, filepath.Join(resultLocation, "cfplot.pdf"))
+
+	cfplotname := filepath.Join(resultLocation, "cfplot.pdf")
+
+	_, err = os.Open(cfplotname)
 	if err != nil {
-		return err
+		err = p.Save(4, 4, cfplotname)
+		if err != nil {
+			return err
+		}
 	}
 
 	xLocs := []float64{4.0192531261400000e-01, 7.9681583412099999e-01, 1.2267475635900000, 1.6992907191700000, 2.0}
@@ -720,8 +726,13 @@ func MakeProfilePlot(xLoc []float64, xData [][][]float64, yData [][][]float64, t
 
 		p.Legend.Top = legendTop
 		p.Legend.Left = legendLeft
-		if err := p.Save(4, 4, filepath.Join(fileloc, name+"_"+xstr+".pdf")); err != nil {
-			return err
+		pltName := filepath.Join(fileloc, name+"_"+xstr+".pdf")
+
+		_, err := os.Open(pltName)
+		if err != nil {
+			if err := p.Save(4, 4, pltName); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

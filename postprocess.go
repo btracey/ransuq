@@ -34,8 +34,6 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 	conErrPltEnd := "err_scat.pdf"
 	conFunPltEnd := "fun_scat.pdf"
 
-
-
 	//TODO: Add contour bit up here
 
 	for i := 0; i < nOutputs; i++ {
@@ -69,7 +67,8 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 	}
 	if allMade {
 		fmt.Println("Postprocessing plots generated")
-		//return nil
+		// Note, this skips the 2-D inputs if somehow it was aborted halfway through
+		return nil
 	}
 
 	// Find the predictions at the data
