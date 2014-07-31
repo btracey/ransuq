@@ -42,12 +42,12 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 		indirect := pltName(path, outputNames[i], indirectEnd)
 
 		// See if the direct comparison is already there
-		_, err := os.Open(direct)
+		_, err := os.Stat(direct)
 		if err == nil {
 			directExists[i] = true
 		}
 		// See if the indirect comparison plot is already there
-		_, err = os.Open(indirect)
+		_, err = os.Stat(indirect)
 		if err == nil {
 			indirectExists[i] = true
 		}

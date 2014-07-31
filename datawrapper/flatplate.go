@@ -108,7 +108,7 @@ func flatplateCompare(drivers []*driver.Driver, resultLocation string) error {
 
 	cfplotname := filepath.Join(resultLocation, "cfplot.pdf")
 
-	_, err = os.Open(cfplotname)
+	_, err = os.Stat(cfplotname)
 	if err != nil {
 		err = p.Save(4, 4, cfplotname)
 		if err != nil {
@@ -728,7 +728,7 @@ func MakeProfilePlot(xLoc []float64, xData [][][]float64, yData [][][]float64, t
 		p.Legend.Left = legendLeft
 		pltName := filepath.Join(fileloc, name+"_"+xstr+".pdf")
 
-		_, err := os.Open(pltName)
+		_, err := os.Stat(pltName)
 		if err != nil {
 			if err := p.Save(4, 4, pltName); err != nil {
 				return err

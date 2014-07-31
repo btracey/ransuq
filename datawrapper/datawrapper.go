@@ -308,8 +308,7 @@ func makeCfPlot(orig, ml *driver.Driver, postprocessdir string) error {
 	}
 	filename := filepath.Join(postprocessdir, "cfplot.pdf")
 	// See if the file exists
-	_, err = os.Open(filename)
-	if err == nil {
+	if _, err = os.Stat(filename); err == nil {
 		return nil
 	}
 
