@@ -50,6 +50,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"Residual_2"},
 		Transformer:   identityFunc,
 	},
+	"PointID": &FieldTransformer{
+		InternalNames: []string{"PointID"},
+		Transformer:   identityFunc,
+	},
 	"Nu": &FieldTransformer{
 		InternalNames: []string{suKinematicViscosity},
 		Transformer:   identityFunc,
