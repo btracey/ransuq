@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Single Flatplate",
+		"TrainingData": "single_flatplate_budget",
+		"TestingData":  "flat_pressure_bl",
+		"Algorithm":    "mul_net_2_50",
+		"Weight":       "none",
+		"Features":     "source",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["none"]
+	}
+]

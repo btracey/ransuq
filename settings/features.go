@@ -28,6 +28,7 @@ const (
 	NondimSource           = "nondim_source"
 	Source                 = "source"
 	SourceAll              = "source_all" // Source with all of the variables
+	SourceComputed         = "source_computed"
 	SourceOmegaNNondim     = "source_omega_n_nondim"
 	FwHiFi                 = "fw_hifi"
 	FwHiFi2                = "fw_hifi_2"
@@ -89,6 +90,11 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case SourceAll:
 		inputs = []string{"SourceNondimer", "Chi", "DNuHatDXBar", "DNuHatDYBar", "DUDXBar", "DUDYBar", "DVDXBar", "DVDYBar"}
 		outputs = []string{"Source"}
+		/*
+			case SourceComputed:
+				inputs = []string{"SourceNondimer", "Chi", "OmegaBar", "NuGradMagBar"}
+				outputs = []string{"Computed_Source"}
+		*/
 	case Fw:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"Fw"}

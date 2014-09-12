@@ -12,6 +12,7 @@ type CSV struct {
 	Name        string
 	IgnoreNames []string
 	IgnoreFunc  func([]float64) bool
+	FieldMap    map[string]string
 }
 
 func (csv *CSV) ID() string {
@@ -22,7 +23,9 @@ func (csv *CSV) Load(fields []string) (common.RowMatrix, error) {
 	loader := &dataloader.Dataset{
 		Name:     csv.Name,
 		Filename: csv.Location,
-		Format:   &dataloader.NaiveCSV{},
+		Format: &dataloader.NaiveCSV{
+			FieldMap: csv.FieldMap,
+		},
 	}
 	return loadFromDataloader(fields, loader, csv.IgnoreNames, csv.IgnoreFunc)
 }
@@ -38,6 +41,9 @@ func loadFromDataloader(fields []string, loader *dataloader.Dataset, ignoreNames
 
 	// Load the fields needed to find ingore data
 	ignoreData, err := dataloader.LoadFromDataset(ignoreNames, loader)
+	if err != nil {
+		return nil, err
+	}
 
 	nSamples := len(tmpData)
 	nDim := len(tmpData[0])

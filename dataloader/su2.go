@@ -249,6 +249,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"SourceNondimer"},
 		Transformer:   identityFunc,
 	},
+	"SourceComputed": &FieldTransformer{
+		InternalNames: []string{"Computed_Source"},
+		Transformer:   identityFunc,
+	},
 	"OmegaBar": &FieldTransformer{
 		InternalNames: []string{"OmegaBar"},
 		Transformer:   identityFunc,
@@ -286,6 +290,10 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 	"NuGradMagBar_Log": &FieldTransformer{
 		InternalNames: []string{"NuHatGradNormBar"},
 		Transformer:   logFunc,
+	},
+	"OmegaNondimer": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer"},
+		Transformer:   identityFunc,
 	},
 	"NuGradNondimer": &FieldTransformer{
 		InternalNames: []string{"NuGradNondimer"},

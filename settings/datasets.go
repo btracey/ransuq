@@ -52,8 +52,10 @@ const (
 	NacaPressureFlat             = "naca_pressure_flat"
 	NacaPressureFlatBl           = "naca_pressure_flat_bl"
 	SingleFlatplate              = "single_flatplate"
+	SingleFlatplateBudget        = "single_flatplate_budget"
 	MultiFlatplate               = "multi_flatplate"
 	MultiFlatplateBL             = "multi_flatplate_bl"
+	MultiFlatplateBudgetBL       = "multi_flatplate_budget_bl"
 	FlatplateSweep               = "flatplate_sweep"
 	FlatplateSweepBl             = "flatplate_sweep_bl"
 	SyntheticFlatplateProduction = "synth_flat_prod"
@@ -76,6 +78,12 @@ const (
 	FlatPress                    = "flat_press"
 )
 
+var budgetFieldMap = map[string]string{
+	"Source":       "Computed_Source",
+	"NuGradMagBar": "NuHatGradNormBar",
+	"WallDistance": "WallDist",
+}
+
 // All of these assume that the working directory is $GOPATH, which should be set
 // from the main script
 
@@ -93,6 +101,38 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 	flatplate5_06_BL := newFlatplate(5e6, 0, "med", "justbl")
 	flatplate6_06_BL := newFlatplate(6e6, 0, "med", "justbl")
 	flatplate7_06_BL := newFlatplate(7e6, 0, "med", "justbl")
+
+	blIgnoreNames, blIgnoreFunc := GetIgnoreData("justbl")
+
+	// TODO: Move these to a function
+	flatplateLoc := filepath.Join(gopath, "data", "ransuq", "flatplate", "med")
+
+	flatplate3_06_budget_BL_Loc := filepath.Join(flatplateLoc, "Flatplate_Re_3e_06", "turb_flatplate_sol_budget.dat")
+	flatplate3_06_budget_BL := &datawrapper.CSV{
+		Location:    flatplate3_06_budget_BL_Loc,
+		Name:        "Flat306Budget",
+		IgnoreFunc:  blIgnoreFunc,
+		IgnoreNames: blIgnoreNames,
+		FieldMap:    budgetFieldMap,
+	}
+
+	flatplate5_06_budget_BL_Loc := filepath.Join(flatplateLoc, "Flatplate_Re_5e_06", "turb_flatplate_sol_budget.dat")
+	flatplate5_06_budget_BL := &datawrapper.CSV{
+		Location:    flatplate5_06_budget_BL_Loc,
+		Name:        "Flat506Budget",
+		IgnoreFunc:  blIgnoreFunc,
+		IgnoreNames: blIgnoreNames,
+		FieldMap:    budgetFieldMap,
+	}
+
+	flatplate7_06_budget_BL_Loc := filepath.Join(flatplateLoc, "Flatplate_Re_7e_06", "turb_flatplate_sol_budget.dat")
+	flatplate7_06_budget_BL := &datawrapper.CSV{
+		Location:    flatplate7_06_budget_BL_Loc,
+		Name:        "Flat706Budget",
+		IgnoreFunc:  blIgnoreFunc,
+		IgnoreNames: blIgnoreNames,
+		FieldMap:    budgetFieldMap,
+	}
 
 	flatplateSweep := []ransuq.Dataset{flatplate3_06, flatplate4_06, flatplate5_06, flatplate6_06, flatplate7_06}
 	multiFlatplate := []ransuq.Dataset{flatplate3_06, flatplate5_06, flatplate7_06}
@@ -137,6 +177,27 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 				Name:       "LES_exp4",
 				IgnoreFunc: func([]float64) bool { return false },
 			},
+		}
+		// Need to check correctness of this case
+		/*
+			case SingleFlatplateBudget:
+
+				location := filepath.Join(gopath, "data", "ransuq", "flatplate", "med", "Flatplate_Re_5e_06", "turb_flatplate_sol_budget.dat")
+				datasets = []ransuq.Dataset{
+					&datawrapper.CSV{
+						Location:    location,
+						Name:        "Flat06Budget",
+						IgnoreFunc:  func(d []float64) bool { return d[0] < wallDistIgnore },
+						IgnoreNames: []string{"WallDist"},
+						FieldMap:    budgetFieldMap,
+					},
+				}
+		*/
+	case MultiFlatplateBudgetBL:
+		datasets = []ransuq.Dataset{
+			flatplate3_06_budget_BL,
+			flatplate5_06_budget_BL,
+			flatplate7_06_budget_BL,
 		}
 	case DNS5n:
 		datasets = []ransuq.Dataset{

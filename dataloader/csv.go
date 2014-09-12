@@ -8,6 +8,77 @@ import (
 	"strings"
 )
 
+/*
+
+// CSV is a wrapper around numcsv. It will read in the data etc. when it is allocated
+// to allow good wrapping with dataloader
+type NumCSV struct {
+	IgnoreFunc func(d []float64) bool
+
+	headings []string
+	data     *mat64.Dense
+	filename string
+}
+
+func NewCSV(n *numcsv.Reader, filename string) (*NumCSV, error) {
+	headings, err := n.ReadHeading()
+	if err != nil {
+		return nil, err
+	}
+	data, err := n.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	return &NumCSV{
+		headings: headings,
+		data:     data,
+		filename: filename,
+	}, nil
+}
+
+// Fieldmap just returns the string. For a NumCSV, all headers must be there
+// explicitly
+func (n *NumCSV) Fieldmap(str string) *FieldTransformer {
+	return &FieldTransformer{
+		InternalNames: []string{str},
+		Transformer:   identityFunc,
+	}
+}
+
+func (n *NumCSV) ReadFields(fields []string, filename string) ([][]float64, error) {
+	if filename != n.filename {
+		return nil, errors.New("Filename does not match the initialized filename")
+	}
+	r, _ := n.data.Dims()
+
+	data := make([][]float64, r)
+	for i := range data {
+		data[i] = make([]float64, len(fields))
+	}
+
+	for j, str := range fields {
+		idx := findStrIdx(n.headings, str)
+		if idx == -1 {
+			return nil, errors.New("Fieldname " + str + " not found")
+		}
+		for i := 0; i < r; i++ {
+			data[i][j] = n.data.At(i, idx)
+		}
+	}
+	return data, nil
+}
+
+func findStrIdx(strs []string, str string) int {
+	for i, s := range strs {
+		if s == str {
+			return i
+		}
+	}
+	return -1
+}
+*/
+
 // CSV is a simple type for loading CSV files. It assumes the data are number-
 // valued, and so it is looser on other formating (not as strict on
 // whitespace, etc.)
@@ -15,13 +86,25 @@ type NaiveCSV struct {
 	// If there is an additional separator beyond whitespace (default to ,).
 	// If the data are whitespace separated this has no effect
 	Delimiter string
+	FieldMap  map[string]string
 }
 
 // Fieldmap just returns the string. For a naive CSV, all headers must be there
 // explicitly
 func (c *NaiveCSV) Fieldmap(str string) *FieldTransformer {
+
+	var internalName string
+	if c.FieldMap == nil {
+		internalName = str
+	} else {
+		var ok bool
+		internalName, ok = c.FieldMap[str]
+		if !ok {
+			internalName = str
+		}
+	}
 	return &FieldTransformer{
-		InternalNames: []string{str},
+		InternalNames: []string{internalName},
 		Transformer:   identityFunc,
 	}
 }
