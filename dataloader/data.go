@@ -101,7 +101,7 @@ func LoadFromDataset(fields []string, dataset *Dataset) ([][]float64, error) {
 	for i, field := range fields {
 		transformers[i] = dataset.Format.Fieldmap(field)
 		if transformers[i] == nil {
-			return nil, fmt.Errorf("Unkown field %s for dataset %s", field, dataset.Name)
+			return nil, fmt.Errorf("Unkown field %v for dataset %v", field, dataset.Name)
 		}
 	}
 

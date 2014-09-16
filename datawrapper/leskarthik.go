@@ -1,6 +1,8 @@
 package datawrapper
 
 import (
+	"errors"
+
 	"github.com/btracey/ransuq/dataloader"
 	"github.com/gonum/matrix/mat64"
 	"github.com/reggo/reggo/common"
@@ -36,7 +38,7 @@ func loadFromDataloader(fields []string, loader *dataloader.Dataset, ignoreNames
 	// Load the needed fields from the data
 	tmpData, err := dataloader.LoadFromDataset(fields, loader)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("csv load: " + err.Error())
 	}
 
 	// Load the fields needed to find ingore data

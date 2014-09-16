@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
 	"sort"
 	"strconv"
 
@@ -76,6 +77,7 @@ const (
 	FlatPressureBl               = "flat_pressure_bl"
 	DNS5n                        = "dns_5n"
 	FlatPress                    = "flat_press"
+	LavalDNS                     = "laval_dns"
 )
 
 var budgetFieldMap = map[string]string{
@@ -396,6 +398,17 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newFlatplate(5e6, -3, "med", "atwall"),
 			newFlatplate(5e6, -10, "med", "atwall"),
 		}
+	case LavalDNS:
+		ignoreNames, ignoreFunc := GetIgnoreData("atwall")
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location:    filepath.Join(gopath, "data", "ransuq", "laval", "laval_csv_computed.dat"),
+				Name:        "Laval",
+				IgnoreFunc:  ignoreFunc,
+				IgnoreNames: ignoreNames,
+				FieldMap:    datawrapper.LavalMap,
+			},
+		}
 	}
 
 	for _, dataset := range datasets {
@@ -680,7 +693,7 @@ const wallDistIgnore = 1e-10
 func GetIgnoreData(ignoreType string) (ignoreNames []string, ignoreFunc func([]float64) bool) {
 	switch ignoreType {
 	case "atwall":
-		ignoreNames = []string{"YLoc"}
+		ignoreNames = []string{"WallDistance"}
 		ignoreFunc = func(d []float64) bool { return d[0] < wallDistIgnore }
 	case "justbl":
 		ignoreNames = []string{"IsInBL", "WallDistance"}

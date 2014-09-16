@@ -27,6 +27,7 @@ const (
 	MulCrossproduction     = "mul_crossproduction"
 	NondimSource           = "nondim_source"
 	Source                 = "source"
+	Source2DNS             = "source_2_dns"
 	SourceAll              = "source_all" // Source with all of the variables
 	SourceComputed         = "source_computed"
 	SourceOmegaNNondim     = "source_omega_n_nondim"
@@ -83,6 +84,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 		outputs = []string{"NondimSource"}
 	case Source:
 		inputs = []string{"SourceNondimer", "Chi", "OmegaBar", "NuGradMagBar"}
+		outputs = []string{"Source"}
+	case Source2DNS:
+		inputs = []string{"SourceNondimer", "Chi", "OmegaBar"}
 		outputs = []string{"Source"}
 	case SourceOmegaNNondim:
 		inputs = []string{"SourceOmegaNNondim", "Omega_OmegaNNondim", "Chi", "NuGradMag_OmegaNNondim"}
