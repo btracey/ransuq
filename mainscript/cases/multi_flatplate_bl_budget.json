@@ -3,10 +3,10 @@
 		"Name":         "Multi Flatplate BL Budget",
 		"TrainingData": "multi_flatplate_budget_bl",
 		"TestingData":  "flatplate_sweep_bl",
-		"Algorithm":    "mul_net_2_45",
+		"Algorithm":    "mul_net_2_100",
 		"Weight":       "none",
 		"Features":     "source",
 		"Convergence":  "10kiter",
-		"ExtraString":  ["none"]
+		"ExtraString":  ["BlOnly"]
 	}
 ]

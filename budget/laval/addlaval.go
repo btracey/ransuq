@@ -41,22 +41,32 @@ var (
 	VVel         = findStringLocation(features, "VVel")
 )
 
-var newFeatures = []string{"StrainRateMag", "VorticityMag", "VorticityMagNondim",
-	"NuTilde", "Chi", "SourceNondimer",
-	"DNuHatDX", "DNuHatDY", "NuHatGradMag", "NuHatGradMagBar", "Source"}
+var newFeatures = []string{"StrainRateMag", "VorticityMag", "VorticityMagNondim", "TotalVelGradNorm",
+	"VelGradDet", "VelVortOverNorm", "NuTilde", "Chi", "SourceNondimer", "NuGradAngle",
+	"DNuHatDX", "DNuHatDY", "NuHatGradMag", "NuHatGradMagBar", "Source", "SourceNondimerUNorm",
+	"NondimSourceUNorm", "VelDetOverNorm", "NuVelGradNormRatio",
+}
 
 var (
-	StrainRateMag      = findStringLocation(newFeatures, "StrainRateMag")
-	VorticityMag       = findStringLocation(newFeatures, "VorticityMag")
-	VorticityMagNondim = findStringLocation(newFeatures, "VorticityMagNondim")
-	NuTilde            = findStringLocation(newFeatures, "NuTilde")
-	Chi                = findStringLocation(newFeatures, "Chi")
-	SourceNondimer     = findStringLocation(newFeatures, "SourceNondimer")
-	DNuHatDX           = findStringLocation(newFeatures, "DNuHatDX")
-	DNuHatDY           = findStringLocation(newFeatures, "DNuHatDY")
-	Source             = findStringLocation(newFeatures, "Source")
-	NuHatGradMag       = findStringLocation(newFeatures, "NuHatGradMag")
-	NuHatGradMagBar    = findStringLocation(newFeatures, "NuHatGradMagBar")
+	StrainRateMag       = findStringLocation(newFeatures, "StrainRateMag")
+	VorticityMag        = findStringLocation(newFeatures, "VorticityMag")
+	VorticityMagNondim  = findStringLocation(newFeatures, "VorticityMagNondim")
+	NuTilde             = findStringLocation(newFeatures, "NuTilde")
+	Chi                 = findStringLocation(newFeatures, "Chi")
+	SourceNondimer      = findStringLocation(newFeatures, "SourceNondimer")
+	DNuHatDX            = findStringLocation(newFeatures, "DNuHatDX")
+	DNuHatDY            = findStringLocation(newFeatures, "DNuHatDY")
+	Source              = findStringLocation(newFeatures, "Source")
+	NuHatGradMag        = findStringLocation(newFeatures, "NuHatGradMag")
+	NuHatGradMagBar     = findStringLocation(newFeatures, "NuHatGradMagBar")
+	TotalVelGradMag     = findStringLocation(newFeatures, "TotalVelGradNorm")
+	VelGradDet          = findStringLocation(newFeatures, "VelGradDet")
+	VelVortOverNorm     = findStringLocation(newFeatures, "VelVortOverNorm")
+	VelDetOverNorm      = findStringLocation(newFeatures, "VelDetOverNorm")
+	NuGradAngle         = findStringLocation(newFeatures, "NuGradAngle")
+	SourceNondimerUNorm = findStringLocation(newFeatures, "SourceNondimerUNorm")
+	NondimSourceUNorm   = findStringLocation(newFeatures, "NondimSourceUNorm")
+	NuVelGradNormRatio  = findStringLocation(newFeatures, "NuVelGradNormRatio")
 )
 
 // features that shouldn't be appended but are convenient to store
@@ -180,7 +190,7 @@ func main() {
 
 			planePoints[i][j] = &scattered.PointMV{
 				Location: loc,
-				Weight:   invSquaredDist(thisLoc, loc),
+				Weight:   invDist(thisLoc, loc),
 			}
 		}
 	}
@@ -198,10 +208,30 @@ func main() {
 		sym, skewsym := velGrad.Split()
 		strainRate := fluid2d.StrainRate{sym}
 		vorticity := fluid2d.Vorticity{skewsym}
+		detVel := velGrad.Det()
+		normVel := velGrad.Norm(twod.Frobenius2)
 
 		strainRateMag := strainRate.Norm(twod.Frobenius2)
+		vorticityMag := vorticity.Norm(twod.Frobenius2)
 		newpt[StrainRateMag] = strainRateMag
-		newpt[VorticityMag] = vorticity.Norm(twod.Frobenius2)
+		newpt[VorticityMag] = vorticityMag
+		newpt[VelGradDet] = detVel
+		newpt[TotalVelGradMag] = normVel
+		newpt[VelVortOverNorm] = vorticityMag / normVel
+		newpt[VelDetOverNorm] = detVel / normVel
+
+		//if math.Abs(normVel-vorticityMag-strainRateMag) > 1e-6 {
+		if math.Abs(normVel*normVel-vorticityMag*vorticityMag-strainRateMag*strainRateMag) > 1e-8 {
+			fmt.Println("dudx", velGrad.DUDX(), " dudy ", velGrad.DVDY(), " sum = ", velGrad.DUDX()+velGrad.DVDY())
+			//fmt.Println("dudy", velGrad.DUDY(), pt[DUDY])
+			//fmt.Println("dvdx", velGrad.DVDX(), pt[DVDX])
+			fmt.Println("dvdy", velGrad.DVDY(), pt[DVDY])
+			fmt.Println("norm vel = ", normVel)
+			fmt.Println("vorticityMag = ", vorticityMag)
+			fmt.Println("strainRateMag = ", strainRateMag)
+			fmt.Println("diff = ", normVel*normVel-vorticityMag*vorticityMag-strainRateMag*strainRateMag)
+			log.Fatal("Norms don't agree")
+		}
 
 		tau := fluid2d.ReynoldsStress{}
 		(&tau).Set(pt[UU], pt[UV], pt[VV])
@@ -220,10 +250,13 @@ func main() {
 		omegaNondimer := nusum / (walldist * walldist)
 		newpt[VorticityMagNondim] = float64(strainRateMag) / (omegaNondimer)
 		newpt[SourceNondimer] = sourceNondimer
+
 	}
 
 	// Need to compute the source term. This is
 	// u * d Nuhat/dx - d/dx (nu + nuhat )(dNuhat/dx)
+
+	nancount := 0
 
 	// First, compute the derivatives of nutilde
 	deriv := make([]float64, nDim)
@@ -247,14 +280,37 @@ func main() {
 		newpt[DNuHatDY] = dNuHatDY
 
 		vel := []float64{pt[UVel], pt[VVel]}
-		extraData[i][LHS] = floats.Dot(deriv, vel)
+		velDotDNuHat := floats.Dot(deriv, vel)
 
+		nuHatGradMag := dNuHatDX*dNuHatDX + dNuHatDY*dNuHatDY
+		velMag := vel[0]*vel[0] + vel[1]*vel[1]
+		angle := velDotDNuHat / (velMag * nuHatGradMag)
+		if velMag == 0 {
+			angle = 0
+		}
+
+		if math.IsNaN(angle) {
+			nancount++
+			fmt.Println("wall dist ", pt[WallDistance])
+			fmt.Println("velMag = ", velMag)
+			fmt.Println("nuHatGradMag", nuHatGradMag)
+
+		}
+
+		extraData[i][LHS] = velDotDNuHat
 		extraData[i][NuSumTimesDX] = extraData[i][NuSum] * dNuHatDX
 		extraData[i][NuSumTimesDY] = extraData[i][NuSum] * dNuHatDY
-		newData[i][NuHatGradMag] = dNuHatDX*dNuHatDX + dNuHatDY*dNuHatDY
+		newData[i][NuHatGradMag] = nuHatGradMag
 		newData[i][NuHatGradMagBar] = newData[i][NuHatGradMag] / newData[i][SourceNondimer]
+
+		newData[i][NuGradAngle] = angle
+		sourceNondimerUNorm := extraData[i][NuSum] * newData[i][TotalVelGradMag]
+		newData[i][SourceNondimerUNorm] = sourceNondimerUNorm
+		newData[i][NuVelGradNormRatio] = (nuHatGradMag * nuHatGradMag) / ((extraData[i][NuSum]) * newData[i][TotalVelGradMag])
 	}
 	// Now, compute the source term
+
+	fmt.Println("Total nan is ", nancount)
 
 	for i, pt := range data {
 		newpt := newData[i]
@@ -272,7 +328,7 @@ func main() {
 		scattered.Plane(loc, planePoints[i], intercept, deriv)
 
 		nuSumDXX := deriv[0]
-		//nuSumDXY := deriv[1]
+		nuSumDXY := deriv[1]
 
 		setPointValues(extraData, NuSumTimesDY, planePoints[i], neighbors[i])
 		intercept = scattered.Intercept{
@@ -281,13 +337,24 @@ func main() {
 		}
 		scattered.Plane(loc, planePoints[i], intercept, deriv)
 
-		//nuSumDYX := deriv[0]
+		nuSumDYX := deriv[0]
 		nuSumDYY := deriv[1]
 
 		// rhs is the trace of the derivative divided by sigma
 		rhs := (nuSumDXX + nuSumDYY) / sa.Sigma
 
-		newpt[Source] = extraData[i][LHS] - rhs
+		source := extraData[i][LHS] - rhs
+
+		if math.Abs(source) > 10000 {
+			fmt.Println("crazy source")
+			fmt.Println("Nu grad ", nuSumDXX, nuSumDXY, nuSumDYX, nuSumDYY)
+			fmt.Println("Vel grad = ", pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
+			fmt.Println("Wall dist = ", pt[WallDistance])
+			os.Exit(1)
+		}
+		newpt[Source] = source
+
+		newData[i][NondimSourceUNorm] = source / newData[i][SourceNondimerUNorm]
 	}
 
 	// do a quick check to make sure all the fields of newData got set
@@ -295,23 +362,22 @@ func main() {
 		fmt.Println(j)
 		var hasNonzero bool
 		for i, pt := range newData {
-			//if pt[j] != 0 {
-			hasNonzero = true
-			//	break
-			//}
+			if pt[j] != 0 {
+				hasNonzero = true
+			}
 			if math.IsInf(pt[j], 0) {
-				fmt.Println("i = ", i, "j = ", j, " is inf")
+				fmt.Println("i = ", i, "j = ", j, " is inf, name is ", newFeatures[j])
 				fmt.Println(data[i][WallDistance])
 			}
 
 			if math.IsNaN(pt[j]) {
-				fmt.Println("i = ", i, "j = ", j, " is nan")
+				fmt.Println("i = ", i, "j = ", j, " is nan, name is ", newFeatures[j])
 			}
 		}
 		if !hasNonzero {
+			fmt.Println("j is ", j, " name is ", newFeatures[j])
 			log.Fatal("Idx ", j, " not set in newData")
 		}
-
 	}
 
 	// Append the data
@@ -395,7 +461,7 @@ func loadData(dataset string, features []string) [][]float64 {
 
 	allData, err := dataloader.Load(features, []*dataloader.Dataset{set})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("error loading laval data: " + err.Error())
 	}
 	data := allData[0] // just limit it to this dataset
 	return data
@@ -410,9 +476,10 @@ func findStringLocation(s []string, str string) int {
 	return -1
 }
 
-func invSquaredDist(x, y []float64) float64 {
+func invDist(x, y []float64) float64 {
 	dist := floats.Distance(x, y, 2)
-	return 1.0 / (dist * dist)
+	return math.Sqrt(1.0 / (dist * dist))
+	//return 1.0 / (dist * dist)
 }
 
 func setPointValues(data [][]float64, idx int, points []*scattered.PointMV, neighbors []int) {

@@ -2,7 +2,7 @@
 	{
 		"Name":         "DNS5n from Karthik",
 		"TrainingData": "dns_5n",
-		"TestingData":  "naca_pressure_flat_bl",
+		"TestingData":  "flatplate_sweep",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "fw_hifi_2",

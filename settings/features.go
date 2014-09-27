@@ -28,13 +28,15 @@ const (
 	NondimSource           = "nondim_source"
 	Source                 = "source"
 	Source2DNS             = "source_2_dns"
-	SourceAll              = "source_all" // Source with all of the variables
+	SourceAll              = "source_all"           // Source with all of the variables
+	SourceAllDNSFirst      = "source_all_dns_first" // Source with all of the variables
 	SourceComputed         = "source_computed"
 	SourceOmegaNNondim     = "source_omega_n_nondim"
 	FwHiFi                 = "fw_hifi"
 	FwHiFi2                = "fw_hifi_2"
 	FwLES2                 = "fw_les_2"
 	Fw                     = "fw"
+	SourceIrrotational     = "source_irrotational"
 )
 
 var sortedFeatureset []string
@@ -94,6 +96,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case SourceAll:
 		inputs = []string{"SourceNondimer", "Chi", "DNuHatDXBar", "DNuHatDYBar", "DUDXBar", "DUDYBar", "DVDXBar", "DVDYBar"}
 		outputs = []string{"Source"}
+	case SourceAllDNSFirst:
+		inputs = []string{"Chi", "DNuHatDX", "DNuHatDY", "DUDX", "DUDY", "DVDX", "DVDY", "DPressDX", "DPressDY"}
+		outputs = []string{"Source"}
 		/*
 			case SourceComputed:
 				inputs = []string{"SourceNondimer", "Chi", "OmegaBar", "NuGradMagBar"}
@@ -111,6 +116,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case FwLES2:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"FwLes2"}
+	case SourceIrrotational:
+		inputs = []string{"SourceNondimerUNorm", "NuGradAngle", "Chi", "NuVelGradNormRatio", "VelVortOverNorm", "VelDetOverNorm"}
+		outputs = []string{"Source"}
 	}
 	return inputs, outputs, nil
 }

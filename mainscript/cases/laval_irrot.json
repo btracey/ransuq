@@ -3,10 +3,10 @@
 		"Name":         "Laval",
 		"TrainingData": "laval_dns",
 		"TestingData":  "none",
-		"Algorithm":    "mul_net_2_50",
+		"Algorithm":    "mul_net_2_25",
 		"Weight":       "none",
-		"Features":     "source",
-		"Convergence":  "10kiter",
+		"Features":     "source_irrotational",
+		"Convergence":  "100iter",
 		"ExtraString":  ["BlOnly"]
 	}
 ]

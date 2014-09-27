@@ -129,7 +129,7 @@ func (c *NaiveCSV) ReadFields(fields []string, filename string) ([][]float64, er
 
 	// The elements to strs are the fieldnames. Make a map from the string to
 	// which column it is
-	nFields := len(strs)
+	nFileFields := len(strs)
 	fieldMap := make(map[string]int)
 	for i := range strs {
 		_, ok := fieldMap[strs[i]]
@@ -153,12 +153,15 @@ func (c *NaiveCSV) ReadFields(fields []string, filename string) ([][]float64, er
 
 	data := make([][]float64, 0)
 
+	count := 0
 	for scanner.Scan() {
 		text := scanner.Text()
 		strs := c.splitLine(text, false)
 
-		if len(strs) != nFields {
-			str := "incorrect number of numbers. number of string fields is: " + strconv.Itoa(nFields) + " number of numbers is " + strconv.Itoa(len(strs))
+		count++
+
+		if len(strs) != nFileFields {
+			str := "incorrect number of numbers. number of string fields is: " + strconv.Itoa(nFileFields) + " number of numbers is " + strconv.Itoa(len(strs))
 			return nil, errors.New(str)
 		}
 

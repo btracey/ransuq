@@ -348,9 +348,9 @@ func plotCfs(oldCfs, newCfs []float64, filename string) error {
 	oldPts := make(plotter.XYs, len(oldCfs))
 	newPts := make(plotter.XYs, len(newCfs))
 	for i := range oldCfs {
-		oldPts[i].X = float64(i)
+		oldPts[i].X = float64(i) / float64(len(oldCfs))
 		oldPts[i].Y = oldCfs[i]
-		newPts[i].X = float64(i)
+		newPts[i].X = float64(i) / float64(len(oldCfs))
 		newPts[i].Y = newCfs[i]
 	}
 
@@ -359,13 +359,22 @@ func plotCfs(oldCfs, newCfs []float64, filename string) error {
 		return err
 	}
 
-	fmt.Println("old pts = ", oldPts)
-	fmt.Println(newPts)
-
-	p.X.Label.Text = "Surface Index"
+	/*
+		fmt.Println("old pts = ", oldPts)
+		fmt.Println(newPts)
+	*/
+	p.X.Min = 0
+	p.X.Max = 1
+	p.X.Label.Text = "x/c"
 	p.Y.Label.Text = "Cf"
+	ticks := []plot.Tick{
+		{Value: 0, Label: "0"},
+		{Value: 0.5, Label: "0.5"},
+		{Value: 1, Label: "1"},
+	}
+	p.X.Tick.Marker = plot.ConstantTicks(ticks)
 
-	trueScatter, err := plotter.NewLine(oldPts)
+	trueScatter, err := plotter.NewScatter(oldPts)
 	if err != nil {
 		return err
 	}
@@ -373,7 +382,8 @@ func plotCfs(oldCfs, newCfs []float64, filename string) error {
 	if err != nil {
 		return err
 	}
-	trueScatter.LineStyle.Color = color.RGBA{R: 255}
+	trueScatter.GlyphStyle.Color = color.RGBA{R: 255}
+	mlScatter.GlyphStyle.Radius = 2
 
 	mlScatter.GlyphStyle.Color = color.RGBA{B: 255}
 	mlScatter.GlyphStyle.Radius = 2

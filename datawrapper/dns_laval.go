@@ -34,4 +34,7 @@ var LavalMap = map[string]string{
 	"Omega":        "VorticityMag",
 	"OmegaBar":     "VorticityMagNondim",
 	"NuGradMagBar": "NuHatGradMagBar",
+
+	"DPressDX": "dx_mean_p_xyz",
+	"DPressDY": "dx_mean_p_xyz",
 }

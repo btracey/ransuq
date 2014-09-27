@@ -2,6 +2,7 @@ package settings
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 
@@ -399,7 +400,7 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newFlatplate(5e6, -10, "med", "atwall"),
 		}
 	case LavalDNS:
-		ignoreNames, ignoreFunc := GetIgnoreData("atwall")
+		ignoreNames, ignoreFunc := GetIgnoreData("laval")
 		datasets = []ransuq.Dataset{
 			&datawrapper.CSV{
 				Location:    filepath.Join(gopath, "data", "ransuq", "laval", "laval_csv_computed.dat"),
@@ -484,7 +485,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	}
 
 	// Load in the existing
-	err = drive.Load(baseconfigFile)
+	err = drive.LoadFrom(baseconfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -594,7 +595,7 @@ func newAirfoil() ransuq.Dataset {
 	}
 
 	// Set the base config options to be those
-	err = drive.Load(baseconfigFile)
+	err = drive.LoadFrom(baseconfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -652,7 +653,7 @@ func newNaca0012(aoa float64, ignoreType string) ransuq.Dataset {
 	}
 
 	// Set the base config options to be those
-	err = drive.Load(baseconfigFile)
+	err = drive.LoadFrom(baseconfigFile)
 	if err != nil {
 		panic(err)
 	}
@@ -692,6 +693,17 @@ const wallDistIgnore = 1e-10
 
 func GetIgnoreData(ignoreType string) (ignoreNames []string, ignoreFunc func([]float64) bool) {
 	switch ignoreType {
+	case "laval":
+		ignoreNames = []string{"WallDistance", "Source"}
+		ignoreFunc = func(d []float64) bool {
+			if d[0] < wallDistIgnore {
+				return true
+			}
+			if math.Abs(d[1]) > 10000 {
+				return true
+			}
+			return false
+		}
 	case "atwall":
 		ignoreNames = []string{"WallDistance"}
 		ignoreFunc = func(d []float64) bool { return d[0] < wallDistIgnore }
