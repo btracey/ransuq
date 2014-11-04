@@ -51,57 +51,57 @@ func (m Missing) Error() string {
 func getAlgorithm(alg string, inputDim, outputDim int) (regtrain.Trainable, error) {
 	switch alg {
 	case NetOneFifty:
-		return nnet.NewSimpleTrainer(inputDim, outputDim, 1, 50, nnet.Linear{})
+		return nnet.NewSimpleTrainer(inputDim, outputDim, 1, 50, nnet.Tanh{}, nnet.Linear{})
 	case NetTwoFifty:
-		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 50, nnet.Linear{})
+		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 50, nnet.Tanh{}, nnet.Linear{})
 	case NetThreeFifty:
-		return nnet.NewSimpleTrainer(inputDim, outputDim, 3, 50, nnet.Linear{})
+		return nnet.NewSimpleTrainer(inputDim, outputDim, 3, 50, nnet.Tanh{}, nnet.Linear{})
 	case NetTwoHundred:
-		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 100, nnet.Linear{})
+		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 100, nnet.Tanh{}, nnet.Linear{})
 	case MulNetTwoTwentyFive:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 25, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 25, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}
 		mulnet := mlalg.MulTrainer{net}
 		return mulnet, nil
 	case MulNetTwoThirtyFive:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 35, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 35, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}
 		mulnet := mlalg.MulTrainer{net}
 		return mulnet, nil
 	case MulNetTwoFourty:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 40, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 40, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}
 		mulnet := mlalg.MulTrainer{net}
 		return mulnet, nil
 	case MulNetTwoFourtyFive:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 45, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 45, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}
 		mulnet := mlalg.MulTrainer{net}
 		return mulnet, nil
 	case MulNetTwoFifty:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 50, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 50, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}
 		mulnet := mlalg.MulTrainer{net}
 		return mulnet, nil
 	case MulNetThreeFifty:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 3, 50, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 3, 50, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}
 		mulnet := mlalg.MulTrainer{net}
 		return mulnet, nil
 	case MulNetTwoHundred:
-		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 100, nnet.Linear{})
+		net, err := nnet.NewSimpleTrainer(inputDim-1, outputDim, 2, 100, nnet.Tanh{}, nnet.Linear{})
 		if err != nil {
 			return nil, err
 		}

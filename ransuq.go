@@ -94,6 +94,7 @@ func (d *DatasetRunner) Compute(dataset Dataset) {
 	}
 
 	// Otherwise, send it to be generated
+	log.Printf("%v not computed, sending to be generated", dataset.ID())
 	d.compute <- generatable
 }
 
@@ -125,14 +126,19 @@ func MultiTurb(runs []*Settings, scheduler Scheduler) []error {
 
 	scheduler.AddChannel(GeneratableIO{In: physicalDataCompute, Out: physicalDataDone})
 
+	fmt.Println("runs = ", runs)
 	// Get the unique data
 	idToIdx, uniqueDatasets, isTraining, learners := uniqueDatasets(runs)
 	_ = idToIdx
 	_ = isTraining
+	fmt.Println("learners =", learners)
+	fmt.Println("uniquedata =", uniqueDatasets)
+	fmt.Println("istraining=", isTraining)
 
 	// Compute all of the physical data
 	datasetRunner := NewDatasetRunner(physicalDataCompute, physicalDataDone)
 
+	fmt.Println("unique datasets", uniqueDatasets)
 	for _, datataset := range uniqueDatasets {
 		go func(dataset Dataset) {
 			datasetRunner.Compute(dataset)
@@ -652,6 +658,8 @@ func uniqueDatasets(runs []*Settings) (m map[string]int, uniqueData []Dataset, i
 	for i := range learners {
 		learners[i] = &learner{}
 	}
+	fmt.Println("learners =", learners)
+	fmt.Println("setting training ", runs[0].TrainingData)
 	var uniqueIdx int
 	for i, setting := range runs {
 		learners[i].Settings = setting

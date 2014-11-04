@@ -183,6 +183,8 @@ func (m mulTrainerLossDeriver) Deriv(parameters, featurizedInput, predOutput, dL
 	}
 }
 
+// Output scaler transforms the magnitude so that the average output is 1, but
+// doesn't change the linear offset.
 type MulOutputScaler struct {
 	mulScale float64
 	isScaled bool
@@ -203,7 +205,9 @@ func (m *MulOutputScaler) SetScale(data *mat64.Dense) error {
 		sum += math.Abs(v)
 	}
 
-	m.mulScale = sum / float64(r)
+	//m.mulScale = sum / float64(r) // Old way that creates bad scaling
+	//m.mulScale = sum
+	m.mulScale = sum / math.Sqrt(float64(r))
 	m.isScaled = true
 
 	return nil
@@ -233,6 +237,12 @@ func (m MulOutputScaler) IsScaled() bool {
 	return m.isScaled
 }
 
+func (m MulOutputScaler) Linear() (shift, scale []float64) {
+	shift = []float64{0}
+	scale = []float64{m.mulScale}
+	return
+}
+
 type mulOutputMarshaler struct {
 	IsScaled bool
 	MulScale float64
@@ -256,6 +266,8 @@ func (m *MulOutputScaler) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// needs the output scaler because we need to scale the multiplier if the output
+// has been scaled
 type MulInputScaler struct {
 	Scaler scale.Scaler
 	*MulOutputScaler

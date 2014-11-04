@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-
-	"github.com/btracey/opt/multivariate"
+	"runtime"
 
 	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
+	"github.com/gonum/optimize"
 
 	"github.com/reggo/reggo/common"
 	"github.com/reggo/reggo/loss"
@@ -191,24 +191,56 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	fmt.Println("losser is ", losser)
 
 	// Create the trainer
-	batch := regtrain.NewBatchGradBased(algorithm, true, inputs, outputs, weights, losser, regularizer)
-	problem := batch
-	optsettings := multivariate.DefaultSettings()
-	optsettings.GradAbsTol = t.TrainSettings.GradAbsTol
-	optsettings.ObjAbsTol = t.TrainSettings.ObjAbsTol
-	optsettings.MaximumFunctionEvaluations = t.TrainSettings.MaxFunEvals
+	problem := &regtrain.GradOptimizable{
+		Trainable: algorithm,
+		Inputs:    inputs,
+		Outputs:   outputs,
+		Weights:   weights,
 
-	// Optimize the results
-	result, err := multivariate.OptimizeGrad(problem, param, optsettings, nil)
+		NumWorkers:  runtime.GOMAXPROCS(0),
+		Losser:      losser,
+		Regularizer: regularizer,
+	}
+
+	settings := optimize.DefaultSettings()
+	settings.FunctionEvals = t.TrainSettings.MaxFunEvals
+	settings.GradientAbsTol = t.TrainSettings.GradAbsTol
+	settings.FunctionAbsTol = t.TrainSettings.ObjAbsTol
+
+	problem.Init()
+	result, err := optimize.Local(problem, param, settings, nil)
 	if err != nil {
 		return nil, emptyResults, err
 	}
+	problem.Close()
 
-	emptyResults.FunctionEvaluations = result.FunctionEvaluations
-	emptyResults.OptGradNorm = floats.Norm(result.Grad, 2)
-	emptyResults.OptObj = result.Obj
+	emptyResults.FunctionEvaluations = result.FunctionEvals
+	emptyResults.OptGradNorm = result.GradientNorm
+	emptyResults.OptObj = result.F
+	algorithm.SetParameters(result.X)
 
-	algorithm.SetParameters(result.Loc)
+	/*
+		// Create the trainer
+		batch := regtrain.NewBatchGradBased(algorithm, true, inputs, outputs, weights, losser, regularizer)
+		problem := batch
+		optsettings := multivariate.DefaultSettings()
+		optsettings.GradAbsTol = t.TrainSettings.GradAbsTol
+		optsettings.ObjAbsTol = t.TrainSettings.ObjAbsTol
+		optsettings.MaximumFunctionEvaluations = t.TrainSettings.MaxFunEvals
+		// Optimize the results
+		result, err := multivariate.OptimizeGrad(problem, param, optsettings, nil)
+		if err != nil {
+			return nil, emptyResults, err
+		}
+
+		emptyResults.FunctionEvaluations = result.FunctionEvaluations
+		emptyResults.OptGradNorm = floats.Norm(result.Grad, 2)
+		emptyResults.OptObj = result.Obj
+		algorithm.SetParameters(result.Loc)
+	*/
+	//
+	//
+	//
 	regpred := algorithm.Predictor()
 
 	// cast predictor as a predictor

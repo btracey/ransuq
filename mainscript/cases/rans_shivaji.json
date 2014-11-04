@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "RANS Shivaji",
+		"TrainingData": "ShivajiRANS",
+		"TestingData":  "none",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "shivaji_fw",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["none"]
+	}
+]

@@ -1,0 +1,25 @@
+nSamples = 725610
+nBounds = 2 nUnique = 16
+nBounds = 5 nUnique = 355
+nBounds = 7 nUnique = 999
+nBounds = 10 nUnique = 2992
+nBounds = 20 nUnique = 19979
+nBounds = 50 nUnique = 154145
+nBounds = 70 nUnique = 263466
+nBounds = 100 nUnique = 392842
+nBounds = 200 nUnique = 582431
+nBounds = 500 nUnique = 680699
+nBounds = 700 nUnique = 694800
+nBounds = 1000 nUnique = 704806
+nBounds = 2 output = 0 avg dist = 0.05138169877273336
+nBounds = 5 output = 0 avg dist = 0.04868015059717139
+nBounds = 7 output = 0 avg dist = 0.046189025273676895
+nBounds = 10 output = 0 avg dist = 0.04395602670214178
+nBounds = 20 output = 0 avg dist = 0.038292979610933836
+nBounds = 50 output = 0 avg dist = 0.03136763714586474
+nBounds = 70 output = 0 avg dist = 0.027857759528282983
+nBounds = 100 output = 0 avg dist = 0.022656616260904983
+nBounds = 200 output = 0 avg dist = 0.012940922447932124
+nBounds = 500 output = 0 avg dist = 0.004538400922843935
+nBounds = 700 output = 0 avg dist = 0.0029222422891353344
+nBounds = 1000 output = 0 avg dist = 0.001635441242416264

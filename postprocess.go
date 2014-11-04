@@ -29,10 +29,10 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 	directExists := make([]bool, nOutputs)
 	indirectExists := make([]bool, nOutputs)
 
-	directEnd := "pred_vs_truth.pdf"
-	indirectEnd := "err_vs_truth.pdf"
-	conErrPltEnd := "err_scat.pdf"
-	conFunPltEnd := "fun_scat.pdf"
+	directEnd := "pred_vs_truth.jpg"
+	indirectEnd := "err_vs_truth.jpg"
+	conErrPltEnd := "err_scat.jpg"
+	conFunPltEnd := "fun_scat.jpg"
 
 	//TODO: Add contour bit up here
 

@@ -313,6 +313,19 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"Fw"},
 		Transformer:   identityFunc,
 	},
+	"OmegaBarAlt": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", "OmegaBar", suTurbKinematicViscosity, suWallDistance, suKinematicViscosity},
+		Transformer: func(s []float64) (float64, error) {
+			dist := s[3]
+			dist = math.Min(dist, 1e-2)
+			nu := s[4]
+			nuhat := s[2]
+			nuhat = nuhat + 3*nu
+			omega := s[0] * s[1]
+			omegabar := omega / (nuhat / (dist * dist))
+			return omegabar, nil
+		},
+	},
 	/*
 		"Fw": &FieldTransformer{
 			InternalNames: fullSANames,

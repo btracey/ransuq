@@ -14,29 +14,37 @@ func init() {
 }
 
 const (
-	NondimProduction       = "nondim_production"
-	Production             = "production"
-	MulProduction          = "mul_production"
-	NondimProductionLog    = "nondim_production_log"
-	NondimProductionLogChi = "nondim_production_logchi"
-	Destruction            = "destruction"
-	CrossProduction        = "cross_production"
-	MulDestruction         = "mul_destruction"
-	NondimDestruction      = "nondim_destruction"
-	NondimCrossProduction  = "nondim_crossproduction"
-	MulCrossproduction     = "mul_crossproduction"
-	NondimSource           = "nondim_source"
-	Source                 = "source"
-	Source2DNS             = "source_2_dns"
-	SourceAll              = "source_all"           // Source with all of the variables
-	SourceAllDNSFirst      = "source_all_dns_first" // Source with all of the variables
-	SourceComputed         = "source_computed"
-	SourceOmegaNNondim     = "source_omega_n_nondim"
-	FwHiFi                 = "fw_hifi"
-	FwHiFi2                = "fw_hifi_2"
-	FwLES2                 = "fw_les_2"
-	Fw                     = "fw"
-	SourceIrrotational     = "source_irrotational"
+	NondimProduction         = "nondim_production"
+	Production               = "production"
+	MulProduction            = "mul_production"
+	NondimProductionLog      = "nondim_production_log"
+	NondimProductionLogChi   = "nondim_production_logchi"
+	Destruction              = "destruction"
+	CrossProduction          = "cross_production"
+	MulDestruction           = "mul_destruction"
+	NondimDestruction        = "nondim_destruction"
+	NondimCrossProduction    = "nondim_crossproduction"
+	MulCrossproduction       = "mul_crossproduction"
+	NondimSource             = "nondim_source"
+	NondimSource2            = "nondim_source2"
+	Source                   = "source"
+	Source2DNS               = "source_2_dns"
+	SourceAll                = "source_all"           // Source with all of the variables
+	SourceAllDNSFirst        = "source_all_dns_first" // Source with all of the variables
+	SourceComputed           = "source_computed"
+	SourceOmegaNNondim       = "source_omega_n_nondim"
+	FwHiFi                   = "fw_hifi"
+	FwHiFi2                  = "fw_hifi_2"
+	FwLES2                   = "fw_les_2"
+	Fw                       = "fw"
+	FwAlt                    = "fw_alt"
+	SourceIrrotational       = "source_irrotational"
+	NondimSourceIrrotational = "nondim_source_irrotational"
+	NondimTurbKinSource      = "nondim_turb_kin_source"
+	NondimTurbSpecDissSource = "nondim_turb_spec_diss_source"
+	TurbKinEnergySA          = "turb_kin_energy_sa"
+	TurbDissipation          = "turb_dissipation"
+	ShivajiFw                = "shivaji_fw"
 )
 
 var sortedFeatureset []string
@@ -84,6 +92,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case NondimSource:
 		inputs = []string{"Chi", "OmegaBar", "NuGradMagBar"}
 		outputs = []string{"NondimSource"}
+	case NondimSource2:
+		inputs = []string{"Chi", "OmegaBar", "NuGradMagBar"}
+		outputs = []string{"NondimSource2"}
 	case Source:
 		inputs = []string{"SourceNondimer", "Chi", "OmegaBar", "NuGradMagBar"}
 		outputs = []string{"Source"}
@@ -107,6 +118,9 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case Fw:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"Fw"}
+	case FwAlt:
+		inputs = []string{"Chi", "OmegaBarAlt"}
+		outputs = []string{"Fw"}
 	case FwHiFi:
 		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}
 		outputs = []string{"FwRealMinusFwRans"}
@@ -116,9 +130,36 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case FwLES2:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"FwLes2"}
-	case SourceIrrotational:
-		inputs = []string{"SourceNondimerUNorm", "NuGradAngle", "Chi", "NuVelGradNormRatio", "VelVortOverNorm", "VelDetOverNorm"}
-		outputs = []string{"Source"}
+		/*
+			case SourceIrrotational:
+				inputs = []string{"SourceNondimerUNorm", "NuGradAngle", "Chi", "NuVelGradNormRatio", "VelVortOverNorm", "VelDetOverNorm"}
+				outputs = []string{"Source"}
+		*/
+	case NondimSourceIrrotational:
+		inputs = []string{"Chi", "VelVortOverNorm", "VelDetOverNorm", "NuHatGradMagUNorm"}
+		outputs = []string{"NondimSourceUNorm"}
+	case NondimTurbKinSource:
+		inputs = []string{"Chi", "VelVortOverNorm", "VelDetOverNorm", "VelNormOverSpecDiss"}
+		outputs = []string{"NondimTurbKinEnergySource"}
+	case NondimTurbSpecDissSource:
+		inputs = []string{"Chi", "VelVortOverNorm", "VelDetOverNorm", "VelNormOverSpecDiss"}
+		outputs = []string{"NondimTurbSpecificDissipationSource"}
+		/*
+			case TurbKinEnergy:
+				//inputs = []string{"NuGradAngle", "Chi", "NuVelGradNormRatio", "VelVortOverNorm", "VelDetOverNorm"}
+				inputs = []string{"VelVortOverNorm", "VelDetOverNorm", "TotalVelGradNorm"}
+				outputs = []string{"TurbKinEnergy"}
+			case TurbKinEnergySST:
+				inputs = []string{"NuGradAngle", "Chi", "NuVelGradNormRatio", "VelVortOverNorm", "VelDetOverNorm"}
+				outputs = []string{"TurbKinEnergy"}
+			case TurbDissipation:
+				inputs = []string{"NuGradAngle", "Chi", "NuVelGradNormRatio", "VelVortOverNorm", "VelDetOverNorm"}
+				//inputs = []string{"VelVortOverNorm", "VelDetOverNorm", "TotalVelGradNorm"}
+				outputs = []string{"TurbDissipation"}
+		*/
+	case ShivajiFw:
+		inputs = []string{"Chi", "Vorticity", "StrainRate", "StressRatio", "WallDistance"}
+		outputs = []string{"Fw"}
 	}
 	return inputs, outputs, nil
 }

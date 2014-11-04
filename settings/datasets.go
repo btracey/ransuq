@@ -2,7 +2,6 @@ package settings
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 
@@ -45,6 +44,8 @@ func init() {
 		SingleRae,
 	)
 	sort.Strings(sortedDatasets)
+
+	lavalLoc = filepath.Join(gopath, "data", "ransuq", "laval", "laval_csv_computed.dat")
 }
 
 var sortedDatasets []string
@@ -54,6 +55,7 @@ const (
 	NacaPressureFlat             = "naca_pressure_flat"
 	NacaPressureFlatBl           = "naca_pressure_flat_bl"
 	SingleFlatplate              = "single_flatplate"
+	SingleFlatplateBL            = "single_flatplate_bl"
 	SingleFlatplateBudget        = "single_flatplate_budget"
 	MultiFlatplate               = "multi_flatplate"
 	MultiFlatplateBL             = "multi_flatplate_bl"
@@ -79,6 +81,12 @@ const (
 	DNS5n                        = "dns_5n"
 	FlatPress                    = "flat_press"
 	LavalDNS                     = "laval_dns"
+	LavalDNSCrop                 = "laval_dns_crop"
+	LavalDNSBL                   = "laval_dns_bl"
+	LavalDNSBLAll                = "laval_dns_bl_all"
+	ShivajiRANS                  = "ShivajiRANS"
+	ShivajiComputed              = "ShivajiRANS_computed"
+	OneraM6                      = "oneram6"
 )
 
 var budgetFieldMap = map[string]string{
@@ -86,6 +94,8 @@ var budgetFieldMap = map[string]string{
 	"NuGradMagBar": "NuHatGradNormBar",
 	"WallDistance": "WallDist",
 }
+
+var lavalLoc string
 
 // All of these assume that the working directory is $GOPATH, which should be set
 // from the main script
@@ -150,6 +160,8 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		datasets = []ransuq.Dataset{}
 	case SingleFlatplate:
 		datasets = []ransuq.Dataset{flatplate5_06}
+	case SingleFlatplateBL:
+		datasets = []ransuq.Dataset{flatplate5_06_BL}
 	case MultiFlatplate:
 		datasets = multiFlatplate
 	case MultiFlatplateBL:
@@ -399,15 +411,39 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newFlatplate(5e6, -3, "med", "atwall"),
 			newFlatplate(5e6, -10, "med", "atwall"),
 		}
-	case LavalDNS:
-		ignoreNames, ignoreFunc := GetIgnoreData("laval")
+	case OneraM6:
+		datasets = []ransuq.Dataset{
+			newOneraM6(),
+		}
+	case LavalDNS, LavalDNSBL, LavalDNSBLAll, LavalDNSCrop:
+		ignoreNames, ignoreFunc := GetIgnoreData(data)
 		datasets = []ransuq.Dataset{
 			&datawrapper.CSV{
-				Location:    filepath.Join(gopath, "data", "ransuq", "laval", "laval_csv_computed.dat"),
+				Location:    lavalLoc,
 				Name:        "Laval",
 				IgnoreFunc:  ignoreFunc,
 				IgnoreNames: ignoreNames,
 				FieldMap:    datawrapper.LavalMap,
+			},
+		}
+	case ShivajiRANS:
+		ignoreNames, ingoreFunc := GetIgnoreData("atwall")
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location:    filepath.Join(gopath, "data", "ransuq", "RANS_Shivaji", "bigrans", "data_extracomputed.txt"),
+				Name:        "RANS_Shivaji",
+				IgnoreFunc:  ingoreFunc,
+				IgnoreNames: ignoreNames,
+			},
+		}
+	case ShivajiComputed:
+		ignoreNames, ingoreFunc := GetIgnoreData("atwall")
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location:    filepath.Join(gopath, "data", "ransuq", "RANS_Shivaji", "bigrans", "data_recomputed.txt"),
+				Name:        "RANS_Shivaji_Computed",
+				IgnoreFunc:  ingoreFunc,
+				IgnoreNames: ignoreNames,
 			},
 		}
 	}
@@ -567,6 +603,58 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	}
 }
 
+func newOneraM6() ransuq.Dataset {
+	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "oneram6")
+	configName := "turb_ONERAM6.cfg"
+	mshName := "mesh_ONERAM6_turb_hexa_43008.su2"
+	baseconfig := filepath.Join(basepath, "testcase", configName)
+	meshFile := filepath.Join(basepath, "testcase", mshName)
+
+	name := "OneraM6"
+	wd := filepath.Join(basepath, "OneraM6")
+	drive := &driver.Driver{
+		Name:      name,
+		Config:    configName,
+		Wd:        wd,
+		FancyName: "Onera M6",
+		Stdout:    name + "_log.txt",
+	}
+
+	baseconfigFile, err := os.Open(baseconfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// Set the base config options to be those
+	err = drive.LoadFrom(baseconfigFile)
+	if err != nil {
+		panic(err)
+	}
+
+	// set mesh file to be the base mesh file
+	relMeshName, err := filepath.Rel(wd, meshFile)
+	if err != nil {
+		panic(err)
+	}
+	drive.Options.MeshFilename = relMeshName
+	drive.Options.KindTurbModel = enum.Ml
+	drive.Options.MlTurbModelFile = "none"
+	drive.Options.MlTurbModelFeatureset = "SA"
+	drive.Options.ExtraOutput = true
+	drive.OptionList["MlTurbModelFile"] = true
+	drive.OptionList["MlTurbModelFeatureset"] = true
+	drive.OptionList["ExtraOutput"] = true
+
+	// Create an SU2 datawrapper from it
+	return &datawrapper.SU2{
+		Driver:      drive,
+		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
+		IgnoreNames: []string{"YLoc"},
+		IgnoreFunc:  func(d []float64) bool { return d[0] < wallDistIgnore },
+		Name:        name,
+	}
+}
+
 func newAirfoil() ransuq.Dataset {
 	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "rae")
 	configName := "turb_SA_RAE2822.cfg"
@@ -647,6 +735,8 @@ func newNaca0012(aoa float64, ignoreType string) ransuq.Dataset {
 		Stdout:    name + "_log.txt",
 	}
 
+	fmt.Println(drive.Wd, drive.Config)
+
 	baseconfigFile, err := os.Open(baseconfig)
 	if err != nil {
 		panic(err)
@@ -692,14 +782,117 @@ func newNaca0012(aoa float64, ignoreType string) ransuq.Dataset {
 const wallDistIgnore = 1e-10
 
 func GetIgnoreData(ignoreType string) (ignoreNames []string, ignoreFunc func([]float64) bool) {
+
+	lavalIgnoreDist := 3
 	switch ignoreType {
-	case "laval":
-		ignoreNames = []string{"WallDistance", "Source"}
+	case "laval_dns":
+		nX := 2304
+		nY := 385
+		ignoreNames = []string{"WallDistance", "idx_x", "idx_y", "Source", "NondimSourceUNorm"}
 		ignoreFunc = func(d []float64) bool {
 			if d[0] < wallDistIgnore {
 				return true
 			}
-			if math.Abs(d[1]) > 10000 {
+			if int(d[1]) > nX-lavalIgnoreDist || int(d[1]) <= lavalIgnoreDist {
+				return true
+			}
+			if int(d[2]) > nY-lavalIgnoreDist || int(d[2]) <= lavalIgnoreDist {
+				return true
+			}
+
+			return false
+		}
+	case "laval_dns_crop":
+		nX := 2304
+		nY := 385
+		ignoreNames = []string{"WallDistance", "idx_x", "idx_y", "Chi", "Source", "NuHatGradMagUNorm", "SourceNondimerUNorm", "NondimSourceUNorm"}
+		ignoreFunc = func(d []float64) bool {
+			if d[0] < wallDistIgnore {
+				return true
+			}
+			idxX := int(d[1])
+			idxY := int(d[2])
+			chi := d[3]
+			source := d[4]
+			nugradbar := d[5]
+			sourceNondimer := d[6]
+			nondimSource := d[7]
+			if int(idxX) > nX-lavalIgnoreDist || int(idxX) <= lavalIgnoreDist {
+				return true
+			}
+			if int(idxY) > nY-lavalIgnoreDist || int(idxY) <= lavalIgnoreDist {
+				return true
+			}
+			if chi > 60 || chi < -25 {
+				return true
+			}
+			_ = source
+			if nugradbar > 0.9 {
+				return true
+			}
+			if sourceNondimer < 1e-8 {
+				return true
+			}
+			if nondimSource > 20 || nondimSource < -20 {
+				return true
+			}
+			/*
+				if source > 0.02 || source < -0.02 {
+					return true
+				}
+			*/
+
+			// Get rid of the two crazy points and their neighbors
+			// bad points are {1008, 16} and {1008, 18}
+			around := 2
+			badPoints := [][2]int{{1008, 16}, {1008, 18}}
+			for _, point := range badPoints {
+				if idxX >= point[0]-around && idxX <= point[0]+around &&
+					idxY >= point[1]-around && idxY <= point[1]+around {
+					//fmt.Println("laval load ignore", idxX, idxY, d[3])
+					return true
+				}
+			}
+
+			return false
+		}
+	case "laval_dns_bl":
+		nX := 2304
+		nY := 385
+		ignoreNames = []string{"WallDistance", "idx_x", "idx_y", "XLoc"}
+		ignoreFunc = func(d []float64) bool {
+			if d[0] < wallDistIgnore {
+				return true
+			}
+			if d[0] > 1e-2 {
+				return true
+			}
+			if int(d[1]) > nX-lavalIgnoreDist || int(d[1]) <= lavalIgnoreDist {
+				return true
+			}
+			if int(d[2]) > nY-lavalIgnoreDist || int(d[2]) <= lavalIgnoreDist {
+				return true
+			}
+			if d[3] > 3 {
+				return true
+			}
+			return false
+		}
+	case "laval_dns_bl_all":
+		nX := 2304
+		nY := 385
+		ignoreNames = []string{"WallDistance", "idx_x", "idx_y"}
+		ignoreFunc = func(d []float64) bool {
+			if d[0] < wallDistIgnore {
+				return true
+			}
+			if d[0] > 1e-2 {
+				return true
+			}
+			if int(d[1]) > nX-lavalIgnoreDist || int(d[1]) <= lavalIgnoreDist {
+				return true
+			}
+			if int(d[2]) > nY-lavalIgnoreDist || int(d[2]) <= lavalIgnoreDist {
 				return true
 			}
 			return false

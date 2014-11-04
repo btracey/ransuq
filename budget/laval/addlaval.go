@@ -11,17 +11,28 @@ import (
 	"sort"
 
 	"github.com/btracey/diff/scattered"
+	"github.com/btracey/fluid"
 	"github.com/btracey/fluid/fluid2d"
 	"github.com/btracey/matrix/twod"
 	"github.com/btracey/numcsv"
 	"github.com/btracey/ransuq/dataloader"
 	"github.com/btracey/ransuq/datawrapper"
 	"github.com/btracey/turbulence/sa"
+	"github.com/btracey/turbulence/sst"
 	"github.com/gonum/floats"
 	"github.com/gonum/matrix/mat64"
+	"github.com/gonum/unit"
 )
 
-var features = []string{"idx_x", "idx_y", "grid_x", "grid_yx", "DUDX", "DUDY", "DVDX", "DVDY", "TauUU", "TauUV", "TauVV", "Nu", "WallDistance", "UVel", "VVel"}
+const (
+	Rho     = 1
+	Dx      = 3.346608355059288e-05
+	NormEps = 1e-5
+)
+
+var features = []string{"idx_x", "idx_y", "grid_x", "grid_yx", "DUDX", "DUDY",
+	"DVDX", "DVDY", "TauUU", "TauUV", "TauVV", "Nu", "WallDistance", "UVel", "VVel",
+	"DissUU", "DissUV", "DissVV"}
 
 var (
 	IdxX         = findStringLocation(features, "idx_x")
@@ -39,44 +50,86 @@ var (
 	WallDistance = findStringLocation(features, "WallDistance")
 	UVel         = findStringLocation(features, "UVel")
 	VVel         = findStringLocation(features, "VVel")
+	DissUU       = findStringLocation(features, "DissUU")
+	DissUV       = findStringLocation(features, "DissUV")
+	DissVV       = findStringLocation(features, "DissVV")
 )
 
-var newFeatures = []string{"StrainRateMag", "VorticityMag", "VorticityMagNondim", "TotalVelGradNorm",
-	"VelGradDet", "VelVortOverNorm", "NuTilde", "Chi", "SourceNondimer", "NuGradAngle",
-	"DNuHatDX", "DNuHatDY", "NuHatGradMag", "NuHatGradMagBar", "Source", "SourceNondimerUNorm",
-	"NondimSourceUNorm", "VelDetOverNorm", "NuVelGradNormRatio",
+var newFeatures = []string{
+	"Rho", "StrainRateMag", "VorticityMag", "VorticityMagNondim", "NuTilde", "Chi",
+	"DNuHatDX", "DNuHatDY", "NuHatGradMag", "NuHatGradMagBar", "NuHatGradMagUNorm", "NuGradAngle",
+	"Source", "SourceNondimer", "SourceNondimer2", "SourceNondimerUNorm", "LogSourceNondimerUNorm",
+	"VelGradDet", "VelVortOverNorm", "VelNormOverNorm", "TotalVelGradNorm", "VelDetOverNorm", "VelNormOverSpecDiss",
+	"NondimSource", "NondimSource2", "NondimSourceUNorm",
+	"TurbKinEnergy", "DTurbKinEnergyDX", "DTurbKinEnergyDY",
+	"TurbDissipation", "TurbSpecificDissipation", "DTurbSpecificDissipationDX", "DTurbSpecificDissipationDY",
+	"TurbKinEnergySourceBudget", "TurbSpecificDissipationSourceBudget",
+	"TurbKinEnergySourceNondimer", "NondimTurbKinEnergySource", "TurbSpecificDissipationSourceNondimer",
+	"NondimTurbSpecificDissipationSource",
 }
 
 var (
-	StrainRateMag       = findStringLocation(newFeatures, "StrainRateMag")
-	VorticityMag        = findStringLocation(newFeatures, "VorticityMag")
-	VorticityMagNondim  = findStringLocation(newFeatures, "VorticityMagNondim")
-	NuTilde             = findStringLocation(newFeatures, "NuTilde")
-	Chi                 = findStringLocation(newFeatures, "Chi")
-	SourceNondimer      = findStringLocation(newFeatures, "SourceNondimer")
-	DNuHatDX            = findStringLocation(newFeatures, "DNuHatDX")
-	DNuHatDY            = findStringLocation(newFeatures, "DNuHatDY")
-	Source              = findStringLocation(newFeatures, "Source")
-	NuHatGradMag        = findStringLocation(newFeatures, "NuHatGradMag")
-	NuHatGradMagBar     = findStringLocation(newFeatures, "NuHatGradMagBar")
-	TotalVelGradMag     = findStringLocation(newFeatures, "TotalVelGradNorm")
+	RhoIdx             = findStringLocation(newFeatures, "Rho")
+	StrainRateMag      = findStringLocation(newFeatures, "StrainRateMag")
+	VorticityMag       = findStringLocation(newFeatures, "VorticityMag")
+	VorticityMagNondim = findStringLocation(newFeatures, "VorticityMagNondim")
+	NuTilde            = findStringLocation(newFeatures, "NuTilde")
+	Chi                = findStringLocation(newFeatures, "Chi")
+
+	DNuHatDX          = findStringLocation(newFeatures, "DNuHatDX")
+	DNuHatDY          = findStringLocation(newFeatures, "DNuHatDY")
+	NuHatGradMag      = findStringLocation(newFeatures, "NuHatGradMag")
+	NuHatGradMagBar   = findStringLocation(newFeatures, "NuHatGradMagBar")
+	NuHatGradMagUNorm = findStringLocation(newFeatures, "NuHatGradMagUNorm")
+	NuGradAngle       = findStringLocation(newFeatures, "NuGradAngle")
+
+	Source                 = findStringLocation(newFeatures, "Source")
+	SourceNondimer         = findStringLocation(newFeatures, "SourceNondimer")
+	SourceNondimer2        = findStringLocation(newFeatures, "SourceNondimer2")
+	SourceNondimerUNorm    = findStringLocation(newFeatures, "SourceNondimerUNorm")
+	LogSourceNondimerUNorm = findStringLocation(newFeatures, "LogSourceNondimerUNorm")
+	NondimSource           = findStringLocation(newFeatures, "NondimSource")
+	NondimSource2          = findStringLocation(newFeatures, "NondimSource2")
+	NondimSourceUNorm      = findStringLocation(newFeatures, "NondimSourceUNorm")
+
+	TotalVelGradNorm    = findStringLocation(newFeatures, "TotalVelGradNorm")
 	VelGradDet          = findStringLocation(newFeatures, "VelGradDet")
 	VelVortOverNorm     = findStringLocation(newFeatures, "VelVortOverNorm")
 	VelDetOverNorm      = findStringLocation(newFeatures, "VelDetOverNorm")
-	NuGradAngle         = findStringLocation(newFeatures, "NuGradAngle")
-	SourceNondimerUNorm = findStringLocation(newFeatures, "SourceNondimerUNorm")
-	NondimSourceUNorm   = findStringLocation(newFeatures, "NondimSourceUNorm")
-	NuVelGradNormRatio  = findStringLocation(newFeatures, "NuVelGradNormRatio")
+	VelNormOverNorm     = findStringLocation(newFeatures, "VelNormOverNorm")
+	VelNormOverSpecDiss = findStringLocation(newFeatures, "VelNormOverSpecDiss")
+
+	TurbKinEnergy    = findStringLocation(newFeatures, "TurbKinEnergy")
+	DTurbKinEnergyDX = findStringLocation(newFeatures, "DTurbKinEnergyDX")
+	DTurbKinEnergyDY = findStringLocation(newFeatures, "DTurbKinEnergyDY")
+
+	TurbDissipation            = findStringLocation(newFeatures, "TurbDissipation")
+	TurbSpecificDissipation    = findStringLocation(newFeatures, "TurbSpecificDissipation")
+	DTurbSpecificDissipationDX = findStringLocation(newFeatures, "DTurbSpecificDissipationDX")
+	DTurbSpecificDissipationDY = findStringLocation(newFeatures, "DTurbSpecificDissipationDY")
+
+	TurbKinEnergySourceBudget   = findStringLocation(newFeatures, "TurbKinEnergySourceBudget")
+	TurbKinEnergySourceNondimer = findStringLocation(newFeatures, "TurbKinEnergySourceNondimer")
+	NondimTurbKinEnergySource   = findStringLocation(newFeatures, "NondimTurbKinEnergySource")
+
+	TurbSpecificDissipationSourceBudget   = findStringLocation(newFeatures, "TurbSpecificDissipationSourceBudget")
+	TurbSpecificDissipationSourceNondimer = findStringLocation(newFeatures, "TurbSpecificDissipationSourceNondimer")
+	NondimTurbSpecificDissipationSource   = findStringLocation(newFeatures, "NondimTurbSpecificDissipationSource")
 )
 
 // features that shouldn't be appended but are convenient to store
-var extraFeatures = []string{"NuSum", "NuSumTimesDX", "NuSumTimesDY", "LHS"}
+var extraFeatures = []string{"NuSum", "NuSumTimesDX", "NuSumTimesDY", "LHS", "KDiffSstDX",
+	"KDiffSstDY", "OmegaDiffSstDX", "OmegaDiffSstDY"}
 
 var (
-	NuSum        = findStringLocation(extraFeatures, "NuSum")
-	NuSumTimesDX = findStringLocation(extraFeatures, "NuSumTimesDX")
-	NuSumTimesDY = findStringLocation(extraFeatures, "NuSumTimesDY")
-	LHS          = findStringLocation(extraFeatures, "LHS")
+	NuSum          = findStringLocation(extraFeatures, "NuSum")
+	NuSumTimesDX   = findStringLocation(extraFeatures, "NuSumTimesDX")
+	NuSumTimesDY   = findStringLocation(extraFeatures, "NuSumTimesDY")
+	KDiffSstDX     = findStringLocation(extraFeatures, "KDiffSstDX")
+	KDiffSstDY     = findStringLocation(extraFeatures, "KDiffSstDY")
+	OmegaDiffSstDX = findStringLocation(extraFeatures, "OmegaDiffSstDX")
+	OmegaDiffSstDY = findStringLocation(extraFeatures, "OmegaDiffSstDY")
+	LHS            = findStringLocation(extraFeatures, "LHS")
 )
 
 const NuTildeEpsilon = 1e-10
@@ -106,7 +159,8 @@ func (g gridSorter) Swap(i, j int) {
 func main() {
 	nDim := 2
 	nX := 2304
-	//nY := 385
+	nY := 385
+	_ = nY
 
 	nProcs := runtime.NumCPU() - 1
 	runtime.GOMAXPROCS(nProcs)
@@ -195,6 +249,13 @@ func main() {
 		}
 	}
 
+	// First, modify the values of epsilon to multiply by Nu
+	for _, pt := range data {
+		pt[DissUU] *= pt[Nu]
+		pt[DissVV] *= pt[Nu]
+		pt[DissUV] *= pt[Nu]
+	}
+
 	newData := make([][]float64, len(data))
 	extraData := make([][]float64, len(data))
 	for i, pt := range data {
@@ -203,7 +264,7 @@ func main() {
 		newData[i] = newpt
 
 		velGrad := fluid2d.VelGrad{}
-		(&velGrad).Set(pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
+		(&velGrad).SetAll(pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
 
 		sym, skewsym := velGrad.Split()
 		strainRate := fluid2d.StrainRate{sym}
@@ -216,9 +277,11 @@ func main() {
 		newpt[StrainRateMag] = strainRateMag
 		newpt[VorticityMag] = vorticityMag
 		newpt[VelGradDet] = detVel
-		newpt[TotalVelGradMag] = normVel
+		newpt[TotalVelGradNorm] = normVel
+		normVelEps := normVel + NormEps
 		newpt[VelVortOverNorm] = vorticityMag / normVel
 		newpt[VelDetOverNorm] = detVel / normVel
+		newpt[VelNormOverNorm] = normVel / normVelEps
 
 		//if math.Abs(normVel-vorticityMag-strainRateMag) > 1e-6 {
 		if math.Abs(normVel*normVel-vorticityMag*vorticityMag-strainRateMag*strainRateMag) > 1e-8 {
@@ -234,9 +297,20 @@ func main() {
 		}
 
 		tau := fluid2d.ReynoldsStress{}
-		(&tau).Set(pt[UU], pt[UV], pt[VV])
+		(&tau).SetAll(pt[UU], pt[UV], pt[VV])
 
 		nuTilde := fluid2d.TurbKinVisc(tau, strainRate, NuTildeEpsilon)
+
+		if i == 37871 || i == 37870 {
+			fmt.Println()
+			fmt.Println("i =", i)
+			fmt.Println("tau = ", tau)
+			fmt.Println("strain rate = ", strainRate)
+			fmt.Println("nut =", nuTilde)
+		}
+
+		//fmt.Println(tau, strainRate, nuTilde)
+		//		fmt.Println("nuTilde = ", nuTilde)
 
 		newpt[NuTilde] = float64(nuTilde)
 		newpt[Chi] = newpt[NuTilde] / pt[Nu]
@@ -247,10 +321,56 @@ func main() {
 		extraData[i][NuSum] = nusum
 
 		sourceNondimer := (nusum * nusum) / (walldist * walldist)
+		sourceNondimer2 := (pt[Nu] * pt[Nu]) / (walldist * walldist)
 		omegaNondimer := nusum / (walldist * walldist)
 		newpt[VorticityMagNondim] = float64(strainRateMag) / (omegaNondimer)
 		newpt[SourceNondimer] = sourceNondimer
+		newpt[SourceNondimer2] = sourceNondimer2
 
+		newpt[TurbKinEnergy] = 0.5 * (pt[UU]*pt[UU] + pt[VV]*pt[VV])
+		newpt[TurbDissipation] = pt[DissUU] + pt[DissVV]
+
+		//newpt[TurbSpecificDissipation] = newpt[TurbDissipation] / (sst.BetaStar * newpt[TurbKinEnergy])
+		newpt[TurbSpecificDissipation] = newpt[TurbDissipation] / newpt[TurbKinEnergy]
+
+		newpt[VelNormOverSpecDiss] = newpt[TotalVelGradNorm] / newpt[TurbSpecificDissipation]
+		// See hack below at at the wall
+
+		newpt[RhoIdx] = Rho
+
+		newpt[TurbKinEnergySourceNondimer] = Rho * newpt[TurbSpecificDissipation] * newpt[TurbKinEnergy]
+		newpt[TurbSpecificDissipationSourceNondimer] = Rho * newpt[TurbSpecificDissipation] * newpt[TurbSpecificDissipation]
+	}
+	//os.Exit(1)
+
+	for i, pt := range data {
+		// Need to hack at the wall
+		if pt[WallDistance] == 0 {
+
+			w := 10 * 6 * pt[Nu] / (sst.Beta1)
+			newData[i][TurbSpecificDissipation] = w / (Dx * Dx)
+
+			/*
+				// Set to be the value one off the wall
+				if pt[IdxY] != 1 && pt[IdxY] != float64(nY) {
+					panic("weird 0")
+				}
+				// Find the index
+				nextX := int(pt[IdxX])
+				var nextIdx int
+				if pt[IdxY] == 1 {
+					nextIdx = i + nX
+				} else {
+					nextIdx = i - nX
+				}
+				if int(data[nextIdx][IdxX]) != nextX {
+					fmt.Println("next x ", data[nextIdx][IdxX])
+					panic("wrong x matching")
+				}
+				omega := newData[nextIdx][TurbSpecificDissipation]
+				newData[i][TurbSpecificDissipation] = omega
+			*/
+		}
 	}
 
 	// Need to compute the source term. This is
@@ -263,21 +383,35 @@ func main() {
 	loc := make([]float64, nDim)
 	for i, pt := range data {
 		newpt := newData[i]
-		setPointValues(data, NuTilde, planePoints[i], neighbors[i])
+		setPointValues(newData, NuTilde, planePoints[i], neighbors[i])
 		//for i := range data {
 		loc[0] = data[i][XLoc]
 		loc[1] = data[i][YLoc]
 		intercept := scattered.Intercept{
 			Force: true,
-			Value: data[i][NuTilde],
+			Value: newData[i][NuTilde],
 		}
-		_ = intercept
 		scattered.Plane(loc, planePoints[i], intercept, deriv)
+
+		if pt[IdxX] == 1018 && pt[IdxY] == 16 {
+			fmt.Println("looking at nu gradient for bad point")
+			fmt.Println(loc, intercept.Value)
+			for _, neigh := range planePoints[i] {
+				fmt.Println(neigh.Location, neigh.Value)
+			}
+			fmt.Println(deriv)
+			newIdx := i + nX
+			fmt.Println(newIdx)
+			fmt.Println(newData[newIdx][NuTilde])
+			//os.Exit(1)
+		}
 
 		dNuHatDX := deriv[0]
 		dNuHatDY := deriv[1]
 		newpt[DNuHatDX] = dNuHatDX
 		newpt[DNuHatDY] = dNuHatDY
+
+		//fmt.Println("nugrad", dNuHatDX, dNuHatDY)
 
 		vel := []float64{pt[UVel], pt[VVel]}
 		velDotDNuHat := floats.Dot(deriv, vel)
@@ -304,9 +438,11 @@ func main() {
 		newData[i][NuHatGradMagBar] = newData[i][NuHatGradMag] / newData[i][SourceNondimer]
 
 		newData[i][NuGradAngle] = angle
-		sourceNondimerUNorm := extraData[i][NuSum] * newData[i][TotalVelGradMag]
+		sourceNondimerUNorm := math.Abs(newData[i][NuTilde])*newData[i][TotalVelGradNorm] + NormEps
 		newData[i][SourceNondimerUNorm] = sourceNondimerUNorm
-		newData[i][NuVelGradNormRatio] = (nuHatGradMag * nuHatGradMag) / ((extraData[i][NuSum]) * newData[i][TotalVelGradMag])
+		newData[i][LogSourceNondimerUNorm] = math.Log(sourceNondimerUNorm)
+		//fmt.Println("sourcenondimer unorm", sourceNondimerUNorm)
+		newData[i][NuHatGradMagUNorm] = nuHatGradMag / sourceNondimerUNorm
 	}
 	// Now, compute the source term
 
@@ -345,16 +481,248 @@ func main() {
 
 		source := extraData[i][LHS] - rhs
 
-		if math.Abs(source) > 10000 {
-			fmt.Println("crazy source")
-			fmt.Println("Nu grad ", nuSumDXX, nuSumDXY, nuSumDYX, nuSumDYY)
-			fmt.Println("Vel grad = ", pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
-			fmt.Println("Wall dist = ", pt[WallDistance])
+		if math.Abs(source) > 10 {
+			fmt.Println()
+			fmt.Println("Idxs ", data[i][IdxX], data[i][IdxY])
+			fmt.Println("nutilde", newData[i][NuTilde])
+			fmt.Println("nutilde grad", newData[i][DNuHatDX], newData[i][DNuHatDY])
+			fmt.Println("nusum grad", extraData[i][NuSumTimesDX], extraData[i][NuSumTimesDY])
+			fmt.Println("second deriv", nuSumDXX, nuSumDXY, nuSumDYX, nuSumDYY)
+			fmt.Println("conv diff", extraData[i][LHS], rhs)
+			fmt.Println("source = ", source)
+		}
+		/*
+			if math.Abs(source) > 400 {
+				fmt.Println("crazy source")
+				fmt.Println("Nu grad ", nuSumDXX, nuSumDXY, nuSumDYX, nuSumDYY)
+				fmt.Println("Vel grad = ", pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
+				fmt.Println("Wall dist = ", pt[WallDistance])
+				os.Exit(1)
+			}
+		*/
+		newpt[Source] = source
+		newpt[NondimSource] = source / newpt[SourceNondimer]
+		newpt[NondimSource2] = source / newpt[SourceNondimer2]
+		newpt[NondimSourceUNorm] = source / newData[i][SourceNondimerUNorm]
+
+		/*
+			// Look at the comparison between velocity gradients and estimated velocity gradients
+			setPointValues(data, VVel, planePoints[i], neighbors[i])
+			intercept = scattered.Intercept{
+				Force: true,
+				Value: data[i][VVel],
+			}
+			scattered.Plane(loc, planePoints[i], intercept, deriv)
+			//fmt.Println("dudx", data[i][DUDX], "dudy", data[i][DUDY])
+			//fmt.Println("dudx", deriv[0], "dudy", deriv[1])
+			//fmt.Println("diff:", data[i][DUDX]-deriv[0], data[i][DUDY]-deriv[1])
+			u := []float64{data[i][DVDX], data[i][DVDY]}
+			fu := []float64{deriv[0], deriv[1]}
+			if !floats.EqualApprox(u, fu, 1e-1) && len(planePoints[i]) == 4 {
+				if int(pt[IdxX]) < 4 || int(pt[IdxX]) > nX-3 {
+					continue
+				}
+				if int(pt[IdxY]) < 4 || int(pt[IdxY]) > nY-3 {
+					continue
+				}
+				fmt.Println("real = ", u)
+				fmt.Println("est = ", fu)
+				fmt.Println("diff = ", u[0]-fu[0], u[1]-fu[1])
+				fmt.Println(pt[IdxX], pt[IdxY])
+				fmt.Println(loc, intercept.Value)
+				for j := range planePoints[i] {
+					fmt.Println(planePoints[i][j].Location, planePoints[i][j].Value)
+
+				}
+				if (u[0] > 0 && fu[0] < 0) || (u[0] < 0 && fu[0] > 0) {
+					panic("x diff")
+				}
+				if (u[1] > 0 && fu[1] < 0) || (u[1] < 0 && fu[1] > 0) {
+					panic("y diff")
+				}
+			}
+		*/
+	}
+
+	// Compute the k and omega derivatives.
+	for i, pt := range data {
+		loc[0] = data[i][XLoc]
+		loc[1] = data[i][YLoc]
+		setPointValues(newData, TurbKinEnergy, planePoints[i], neighbors[i])
+		intercept := scattered.Intercept{
+			Force: true,
+			Value: newData[i][TurbKinEnergy],
+		}
+		scattered.Plane(loc, planePoints[i], intercept, deriv)
+		newData[i][DTurbKinEnergyDX] = deriv[0]
+		newData[i][DTurbKinEnergyDY] = deriv[1]
+		dkdx := [2]float64{deriv[0], deriv[1]}
+
+		setPointValues(newData, TurbSpecificDissipation, planePoints[i], neighbors[i])
+		intercept = scattered.Intercept{
+			Force: true,
+			Value: newData[i][TurbSpecificDissipation],
+		}
+
+		scattered.Plane(loc, planePoints[i], intercept, deriv)
+		// Hack at the wall
+		/*
+			newPlanePoints := make([]*scattered.PointMV, 0)
+			if pt[WallDistance] != 0 {
+				for j := range planePoints[i] {
+					v := planePoints[i][j].Value
+					if math.IsNaN(v) || math.IsInf(v, 0) {
+						continue
+					}
+					newPlanePoints = append(newPlanePoints, planePoints[i][j])
+				}
+			}
+			scattered.Plane(loc, newPlanePoints, intercept, deriv)
+		*/
+
+		//fmt.Println(planePoints)
+
+		newData[i][DTurbSpecificDissipationDX] = deriv[0]
+		newData[i][DTurbSpecificDissipationDY] = deriv[1]
+		dOmegaDX := [2]float64{deriv[0], deriv[1]}
+
+		velGrad := &fluid2d.VelGrad{}
+		velGrad.SetAll(pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
+		// Compute diffusion
+		mu := pt[Nu] * Rho
+
+		wd := pt[WallDistance]
+		// Hack at wall so gradients work.
+		if wd == 0 {
+			wd = 1e-10
+		}
+		turb := &sst.SST2Cache{
+			VelGrad:   *velGrad,
+			WallDist:  unit.Length(wd),
+			K:         fluid.KineticEnergy(newData[i][TurbKinEnergy]),
+			Nu:        fluid.KinematicViscosity(pt[Nu]),
+			Rho:       fluid.Density(Rho),
+			OmegaDiss: fluid.SpecificDissipation(newData[i][TurbSpecificDissipation]),
+			DKDX:      dkdx,
+			DOmegaDX:  dOmegaDX,
+		}
+		turb.Compute()
+		sigmaK := sst.Blend(turb.F1, sst.SigmaK1, sst.SigmaK2)
+		mup := mu + sigmaK*float64(turb.MuT)
+		extraData[i][KDiffSstDX] = mup * newData[i][DTurbKinEnergyDX]
+		extraData[i][KDiffSstDY] = mup * newData[i][DTurbKinEnergyDY]
+
+		sigmaW := sst.Blend(turb.F1, sst.SigmaW1, sst.SigmaW2)
+		mup = mu + sigmaW*float64(turb.MuT)
+		extraData[i][OmegaDiffSstDX] = mup * newData[i][DTurbSpecificDissipationDX]
+		extraData[i][OmegaDiffSstDY] = mup * newData[i][DTurbSpecificDissipationDY]
+
+		//if (math.IsNaN(mup) || math.IsInf(mup, 0)) && data[i][WallDistance] != 0 {
+		//if i == 2304 {
+		//if math.IsNaN(mup) {
+		//if math.IsInf(extraData[i][OmegaDiffSstDX], 0) || math.IsNaN(extraData[i][OmegaDiffSstDX]) {
+		if (math.IsInf(extraData[i][OmegaDiffSstDX], 0) || math.IsNaN(extraData[i][OmegaDiffSstDX])) && pt[WallDistance] != 0 {
+			fmt.Println("mup is nan")
+			fmt.Println("i = ", i)
+			fmt.Println("wall dist = ", data[i][WallDistance])
+			fmt.Println("k = ", newData[i][TurbKinEnergy])
+			fmt.Println("eps = ", newData[i][TurbDissipation])
+			fmt.Println("omega", newData[i][TurbSpecificDissipation])
+			fmt.Println("mu = ", mu)
+			fmt.Println("rho", Rho)
+			fmt.Println("turb omega", turb.OmegaDiss)
+			fmt.Println(turb.DKDX)
+			fmt.Println(turb.DOmegaDX)
+			fmt.Println("cdkw", turb.CDkw)
+			fmt.Println("arg1", turb.Arg1)
+			fmt.Println("f1 ", turb.F1)
+			fmt.Println("mup", mup)
+			fmt.Println(newData[i][DTurbSpecificDissipationDX], newData[i][DTurbSpecificDissipationDY])
+			fmt.Println(extraData[i][OmegaDiffSstDX], extraData[i][OmegaDiffSstDY])
+			fmt.Println(sigmaW)
+			fmt.Println(turb.MuT)
 			os.Exit(1)
 		}
-		newpt[Source] = source
+	}
 
-		newData[i][NondimSourceUNorm] = source / newData[i][SourceNondimerUNorm]
+	// Do the budget for the K and Omega source terms
+	for i, pt := range data {
+		loc[0] = data[i][XLoc]
+		loc[1] = data[i][YLoc]
+		setPointValues(extraData, KDiffSstDX, planePoints[i], neighbors[i])
+		intercept := scattered.Intercept{
+			Force: true,
+			Value: extraData[i][KDiffSstDX],
+		}
+		scattered.Plane(loc, planePoints[i], intercept, deriv)
+
+		dissKXX := deriv[0]
+
+		setPointValues(extraData, KDiffSstDY, planePoints[i], neighbors[i])
+		intercept = scattered.Intercept{
+			Force: true,
+			Value: extraData[i][KDiffSstDY],
+		}
+		scattered.Plane(loc, planePoints[i], intercept, deriv)
+		dissKYY := deriv[1]
+
+		dissK := dissKXX + dissKYY
+		convK := Rho * (pt[UVel]*newData[i][DTurbKinEnergyDX] + pt[VVel]*newData[i][DTurbKinEnergyDY])
+
+		newData[i][TurbKinEnergySourceBudget] = convK - dissK
+
+		setPointValues(extraData, OmegaDiffSstDX, planePoints[i], neighbors[i])
+		intercept = scattered.Intercept{
+			Force: true,
+			Value: extraData[i][OmegaDiffSstDX],
+		}
+		scattered.Plane(loc, planePoints[i], intercept, deriv)
+
+		dissOmegaXX := deriv[0]
+
+		setPointValues(extraData, OmegaDiffSstDY, planePoints[i], neighbors[i])
+		intercept = scattered.Intercept{
+			Force: true,
+			Value: extraData[i][OmegaDiffSstDY],
+		}
+		scattered.Plane(loc, planePoints[i], intercept, deriv)
+
+		dissOmegaYY := deriv[0]
+
+		dissOmega := dissOmegaXX + dissOmegaYY
+		convOmega := Rho * (pt[UVel]*newData[i][DTurbSpecificDissipationDX] + pt[VVel]*newData[i][DTurbSpecificDissipationDY])
+		newData[i][TurbSpecificDissipationSourceBudget] = convOmega - dissOmega
+
+		//fmt.Println("K = ", newData[i][TurbKinEnergy], "Rho = ", Rho, "Omega = ", newData[i][TurbSpecificDissipation], "Nondim=", newData[i][TurbKinEnergySourceNondimer])
+
+		newData[i][NondimTurbKinEnergySource] = newData[i][TurbKinEnergySourceBudget] / newData[i][TurbKinEnergySourceNondimer]
+		newData[i][NondimTurbSpecificDissipationSource] = newData[i][TurbSpecificDissipationSourceBudget] / newData[i][TurbSpecificDissipationSourceNondimer]
+
+		/*
+			if newData[i][TurbKinEnergySourceBudget] > 60000 {
+				fmt.Println("xIdx", data[i][IdxX], "idxy", data[i][IdxY], "WallDist", data[i][WallDistance])
+				fmt.Println("convK", convK, "dissK", dissK)
+				fmt.Println("sourcek", newData[i][TurbKinEnergySourceBudget], "nondim", newData[i][NondimTurbKinEnergySource])
+			}
+		*/
+
+		/*
+			if newData[i][TurbSpecificDissipationSourceBudget] > 1e15 {
+				fmt.Println("xIdx", data[i][IdxX], "idxy", data[i][IdxY], "WallDist", data[i][WallDistance])
+				fmt.Println("conv", convOmega, "dissOmega", dissOmega)
+				//fmt.Println("sourcek", newData[i][TurbKinEnergySourceBudget], "nondim", newData[i][NondimTurbKinEnergySource])
+			}
+		*/
+
+		//fmt.Println(newData[i][TurbKinEnergySourceBudget] - turb.SourceK)
+
+		if math.IsNaN(newData[i][TurbSpecificDissipationSourceBudget]) && pt[WallDistance] != 0 {
+			fmt.Println(pt[WallDistance])
+			fmt.Println(i)
+			fmt.Println("diss omega", dissOmega, "conv omega", convOmega)
+			fmt.Println(dissOmegaXX, dissOmegaYY)
+			os.Exit(1)
+		}
 	}
 
 	// do a quick check to make sure all the fields of newData got set
@@ -365,13 +733,12 @@ func main() {
 			if pt[j] != 0 {
 				hasNonzero = true
 			}
-			if math.IsInf(pt[j], 0) {
-				fmt.Println("i = ", i, "j = ", j, " is inf, name is ", newFeatures[j])
-				fmt.Println(data[i][WallDistance])
+			if math.IsInf(pt[j], 0) && data[i][WallDistance] != 0 {
+				fmt.Println("i = ", i, "j = ", j, " is inf, name is ", newFeatures[j], "WallDist", data[i][WallDistance])
 			}
 
-			if math.IsNaN(pt[j]) {
-				fmt.Println("i = ", i, "j = ", j, " is nan, name is ", newFeatures[j])
+			if math.IsNaN(pt[j]) && data[i][WallDistance] != 0 {
+				fmt.Println("i = ", i, "j = ", j, " is nan, name is ", newFeatures[j], "WallDist", data[i][WallDistance])
 			}
 		}
 		if !hasNonzero {
@@ -408,6 +775,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Finished")
 }
 
 func appendCSV(r *numcsv.Reader, newHeadings []string, newData [][]float64, w *numcsv.Writer) error {

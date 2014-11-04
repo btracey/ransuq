@@ -104,30 +104,21 @@ func loadDenseData(dataset Dataset, features []string, inputInds, outputInds, we
 	inputData = denseUnpack(data, inputInds)
 	outputData = denseUnpack(data, outputInds)
 	weightData = denseUnpack(data, weightInds)
-
 	return inputData, outputData, weightData, nil
 }
 
 func denseUnpack(data common.RowMatrix, inds []int) common.RowMatrix {
-
-	if len(inds) == 0 {
-		return nil
-	}
-
 	nSamples, _ := data.Dims()
-
 	newdata := mat64.NewDense(nSamples, len(inds), nil)
-
 	for i := 0; i < nSamples; i++ {
 		for j := range inds {
 			newdata.Set(i, j, data.At(i, inds[j]))
 		}
 	}
-
 	return newdata
 }
 
-func denseLoadAll(datasets []Dataset, inputFeatures, outputFeatures, weightFeatures []string, weightFunc func([]float64) float64) (
+func DenseLoadAll(datasets []Dataset, inputFeatures, outputFeatures, weightFeatures []string, weightFunc func([]float64) float64) (
 	inputData, outputData common.RowMatrix, weights []float64, err error) {
 	// TODO: This is really memory intensive at the moment. Need to make this better
 	// (too much copying between dense matrices)
@@ -241,6 +232,6 @@ func LoadTrainingData(datasets []Dataset, loadStyle LoadStyle, inputFeatures, ou
 		err = UnknownLoadStyle
 		return
 	case DenseLoad:
-		return denseLoadAll(datasets, inputFeatures, outputFeatures, weightFeatures, weightFunc)
+		return DenseLoadAll(datasets, inputFeatures, outputFeatures, weightFeatures, weightFunc)
 	}
 }

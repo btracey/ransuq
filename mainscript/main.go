@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/mlalg"
@@ -30,7 +28,7 @@ func init() {
 	//mat64.Register(cblas.Blas{})
 	//dbw.Register(cblas.Blas{})
 
-	rand.Seed(time.Now().UnixNano())
+	//	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {
@@ -73,7 +71,7 @@ func main() {
 
 	settingCases := GetCases(f)
 	fmt.Println("The number of runs that will be done is: ", len(settingCases))
-	for _, c := range settingCases {
+	for i, c := range settingCases {
 
 		fmt.Println("Set testing data", c.TestingData)
 		set, err := settings.GetSettings(
@@ -97,6 +95,9 @@ func main() {
 			}
 			set.Trainer.InputScaler = is
 			set.Trainer.OutputScaler = os
+		}
+		if len(set.TrainingData) == 0 {
+			log.Fatal("no training data in set ", i)
 		}
 		sets = append(sets, set)
 	}
