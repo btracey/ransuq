@@ -2,10 +2,10 @@
 	{
 		"Name":         "Onera M6 Fw",
 		"TrainingData": "oneram6",
-		"TestingData":  "oneram6",
+		"TestingData":  "naca_pressure_flat",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
-		"Features":     "fw",
+		"Features":     "source_dim_alt",
 		"Convergence":  "10kiter",
 		"ExtraString":  ["none"]
 	}

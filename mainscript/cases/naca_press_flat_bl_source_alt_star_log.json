@@ -1,11 +1,11 @@
 [
 	{
 		"Name":         "Onera M6 Fw",
-		"TrainingData": "naca_pressure_flat",
+		"TrainingData": "naca_pressure_flat_bl",
 		"TestingData":  "none",
-		"Algorithm":    "net_2_50",
+		"Algorithm":    "mul_net_2_50",
 		"Weight":       "none",
-		"Features":     "fw_alt_3",
+		"Features":     "source_alt_star_log",
 		"Convergence":  "10iter",
 		"ExtraString":  ["none"]
 	}

@@ -1,12 +1,12 @@
 [
 	{
-		"Name":         "Onera M6 Fw",
-		"TrainingData": "naca_pressure_flat",
+		"Name":         "Multi Flatplate",
+		"TrainingData": "multi_flatplate",
 		"TestingData":  "none",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "fw_alt_3",
-		"Convergence":  "10iter",
+		"Convergence":  "Trimmed10kiter",
 		"ExtraString":  ["none"]
 	}
 ]

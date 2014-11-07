@@ -95,6 +95,7 @@ func (d *DatasetRunner) Compute(dataset Dataset) {
 
 	// Otherwise, send it to be generated
 	log.Printf("%v not computed, sending to be generated", dataset.ID())
+
 	d.compute <- generatable
 }
 

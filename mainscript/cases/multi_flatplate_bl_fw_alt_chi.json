@@ -5,8 +5,8 @@
 		"TestingData":  "none",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
-		"Features":     "fw",
-		"Convergence":  "10kiter",
+		"Features":     "fw_alt_chi",
+		"Convergence":  "5kiter",
 		"ExtraString":  ["BlOnly"]
 	}
 ]

@@ -1,11 +1,11 @@
 [
 	{
-		"Name":         "Multi Flatplate",
+		"Name":         "Multi Flatplate Source",
 		"TrainingData": "multi_flatplate_bl",
 		"TestingData":  "none",
-		"Algorithm":    "net_2_50",
+		"Algorithm":    "mul_net_2_50",
 		"Weight":       "none",
-		"Features":     "fw",
+		"Features":     "source_alt",
 		"Convergence":  "10kiter",
 		"ExtraString":  ["BlOnly"]
 	}

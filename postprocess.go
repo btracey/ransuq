@@ -84,6 +84,55 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 		}
 	}
 
+	pltMul := 4.0
+
+	err := os.MkdirAll(path, 0700)
+	if err != nil {
+		return err
+	}
+	// Make histograms of the input data
+	histPts := make(plotter.Values, nSamples)
+	for j := 0; j < inputDim; j++ {
+		for i := 0; i < nSamples; i++ {
+			histPts[i] = inputData.At(i, j)
+		}
+		h, err := plotter.NewHist(histPts, 1000)
+		if err != nil {
+			return err
+		}
+		name := inputNames[j] + "_hist.jpg"
+		p, err := plot.New()
+		if err != nil {
+			return err
+		}
+		p.Add(h)
+		err = p.Save(4*pltMul, 4*pltMul, filepath.Join(path, name))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Histograms of output data
+	for j := 0; j < nOutputs; j++ {
+		for i := 0; i < nSamples; i++ {
+			histPts[i] = outputData.At(i, j)
+		}
+		h, err := plotter.NewHist(histPts, 1000)
+		if err != nil {
+			return err
+		}
+		name := outputNames[j] + "_hist.jpg"
+		p, err := plot.New()
+		if err != nil {
+			return err
+		}
+		p.Add(h)
+		err = p.Save(4*pltMul, 4*pltMul, filepath.Join(path, name))
+		if err != nil {
+			return err
+		}
+	}
+
 	// Now, make the plots comparing the predictions
 	pts := make(plotter.XYs, nSamples)
 	errPts := make(plotter.XYs, nSamples)
@@ -123,7 +172,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 		plt.Y.Label.Text = "Predicted value of " + name
 		plt.Title.Text = "Prediction vs. Truth for " + name
 
-		err = plt.Save(4, 4, direct)
+		err = plt.Save(4*pltMul, 4*pltMul, direct)
 		fmt.Println("filename", direct)
 		fmt.Println(err)
 		if err != nil {
@@ -157,7 +206,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 
 		// TODO: Save the data used to make the plot
 
-		err = errPlt.Save(4, 4, indirect)
+		err = errPlt.Save(4*pltMul, 4*pltMul, indirect)
 		if err != nil {
 			fmt.Println("Error saving errPLts")
 			return err
@@ -205,18 +254,18 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 				return err
 			}
 
-			scatErr.GlyphStyle.Radius = vg.Centimeters(0.01)
+			scatErr.GlyphStyle.Radius = vg.Centimeters(0.01 * pltMul)
 			scatErr.GlyphStyle.Shape = plot.CircleGlyph{}
 			conErrPlt.Add(scatErr)
-			err = conErrPlt.Save(4, 4, contourErr)
+			err = conErrPlt.Save(4*pltMul, 4*pltMul, contourErr)
 			if err != nil {
 				return err
 			}
 
-			scatFun.GlyphStyle.Radius = vg.Centimeters(0.01)
+			scatFun.GlyphStyle.Radius = vg.Centimeters(0.01 * pltMul)
 			scatFun.GlyphStyle.Shape = plot.CircleGlyph{}
 			conFunPlt.Add(scatFun)
-			err = conFunPlt.Save(4, 4, contourFun)
+			err = conFunPlt.Save(4*pltMul, 4*pltMul, contourFun)
 			if err != nil {
 				return err
 			}

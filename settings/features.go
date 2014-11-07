@@ -26,8 +26,12 @@ const (
 	NondimCrossProduction    = "nondim_crossproduction"
 	MulCrossproduction       = "mul_crossproduction"
 	NondimSource             = "nondim_source"
+	NondimSourceAlt          = "nondim_source_alt"
 	NondimSource2            = "nondim_source2"
 	Source                   = "source"
+	SourceDimAlt             = "source_dim_alt"
+	SourceAlt                = "source_alt"
+	SourceAltStarLog         = "source_alt_star_log"
 	Source2DNS               = "source_2_dns"
 	SourceAll                = "source_all"           // Source with all of the variables
 	SourceAllDNSFirst        = "source_all_dns_first" // Source with all of the variables
@@ -37,7 +41,10 @@ const (
 	FwHiFi2                  = "fw_hifi_2"
 	FwLES2                   = "fw_les_2"
 	Fw                       = "fw"
+	FwDimAlt                 = "fw_dim_alt"
 	FwAlt                    = "fw_alt"
+	FwAltStarLog             = "fw_alt_star_log"
+	FwAltChi                 = "fw_alt_chi"
 	SourceIrrotational       = "source_irrotational"
 	NondimSourceIrrotational = "nondim_source_irrotational"
 	NondimTurbKinSource      = "nondim_turb_kin_source"
@@ -98,6 +105,23 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case Source:
 		inputs = []string{"SourceNondimer", "Chi", "OmegaBar", "NuGradMagBar"}
 		outputs = []string{"Source"}
+	case SourceAlt:
+		inputs = []string{"SourceNondimerAlt", "Chi", "NondimOmegaAlt", "NondimNuGradMagAlt"}
+		outputs = []string{"SourceAlt"}
+	case SourceAltStarLog:
+		inputs = []string{"SourceNondimerAltStar", "Chi", "NondimOmegaAltStar", "NondimNuGradMagAltStar",
+			"LogOmegaAltNondimRatio", "LogSourceAltNondimRatio",
+			"InvSourceNondimerAltStar", "InvOmegaNondimerAltStar"}
+		outputs = []string{"SourceAlt"}
+		/*
+			case NondimSourceAlt:
+				inputs = []string{"ChiAlt", "NondimOmegaAlt", "NondimNuGradMagAlt",
+					"OmegaAltNondimRatio", "SourceAltNondimRatio"}
+				outputs = []string{"NondimSourceAlt"}
+		*/
+	case SourceDimAlt:
+		inputs = []string{"NuHatAlt", "OmegaAlt", "NuGradMagAlt", "WallDistance"}
+		outputs = []string{"SourceAlt"}
 	case Source2DNS:
 		inputs = []string{"SourceNondimer", "Chi", "OmegaBar"}
 		outputs = []string{"Source"}
@@ -118,8 +142,14 @@ func GetFeatures(features string) (inputs, outputs []string, err error) {
 	case Fw:
 		inputs = []string{"Chi", "OmegaBar"}
 		outputs = []string{"Fw"}
-	case FwAlt:
-		inputs = []string{"Chi", "OmegaBarAlt"}
+	case FwDimAlt:
+		inputs = []string{"Chi", "OmegaAlt", "WallDistance"}
+		outputs = []string{"Fw"}
+	case FwAltStarLog:
+		inputs = []string{"Chi", "NondimOmegaAltStar", "LogOmegaAltNondimRatio"}
+		outputs = []string{"Fw"}
+	case FwAltChi:
+		inputs = []string{"ChiAlt", "OmegaBar"}
 		outputs = []string{"Fw"}
 	case FwHiFi:
 		inputs = []string{"Chi", "OmegaBar", "StrainRateMagBar"}

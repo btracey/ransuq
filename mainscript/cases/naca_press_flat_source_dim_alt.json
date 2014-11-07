@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Multi Flatplate",
+		"TrainingData": "naca_pressure_flat",
+		"TestingData":  "oneram6",
+		"Algorithm":    "net_2_25",
+		"Weight":       "none",
+		"Features":     "source_dim_alt",
+		"Convergence":  "Trimmed1kiter",
+		"ExtraString":  ["none"]
+	}
+]

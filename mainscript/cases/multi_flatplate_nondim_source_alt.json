@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Multi Flatplate",
+		"TrainingData": "multi_flatplate",
+		"TestingData":  "flatplate_sweep",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "nondim_source_alt",
+		"Convergence":  "Trimmed10kiter",
+		"ExtraString":  ["none"]
+	}
+]

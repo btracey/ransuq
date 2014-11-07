@@ -1,8 +1,8 @@
 [
 	{
-		"Name":         "Multi Flatplate",
-		"TrainingData": "multi_flatplate_bl",
-		"TestingData":  "none",
+		"Name":         "Onera M6 Fw",
+		"TrainingData": "oneram6_bl",
+		"TestingData":  "oneram6_bl",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "fw",

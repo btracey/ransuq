@@ -21,12 +21,16 @@ const (
 	// TODO: Better name
 	StandardTraining = "standard"
 	QuickTraining    = "quick"
+	TenIter          = "10iter"
 	OneKIter         = "1kiter"
 	FiveKIter        = "5kiter"
 	TenKIter         = "10kiter"
 	OneHundIter      = "100iter"
 	HundKIter        = "100kiter"
 	MilIter          = "militer"
+
+	TrimmedTenKIter = "Trimmed10kiter"
+	TrimmedOneKIter = "Trimmed1kiter"
 )
 
 func GetTrainer(train string, algorithm string, inputDim, outputDim int) (*ransuq.Trainer, error) {
@@ -68,6 +72,18 @@ func getTrainSettings(train string) (*ransuq.Trainer, error) {
 				ObjAbsTol:   1e-6,
 				GradAbsTol:  1e-6,
 				MaxFunEvals: 3e4,
+			},
+			InputScaler:  &scale.Normal{},
+			OutputScaler: &scale.Normal{},
+			Losser:       loss.SquaredDistance{},
+			Regularizer:  nil,
+		}, nil
+	case TenIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e1,
 			},
 			InputScaler:  &scale.Normal{},
 			OutputScaler: &scale.Normal{},
@@ -145,6 +161,42 @@ func getTrainSettings(train string) (*ransuq.Trainer, error) {
 			OutputScaler: &scale.Normal{},
 			Losser:       loss.SquaredDistance{},
 			Regularizer:  nil,
+		}, nil
+	case TrimmedTenKIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e4,
+			},
+			InputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			OutputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			Losser:      loss.SquaredDistance{},
+			Regularizer: nil,
+		}, nil
+	case TrimmedOneKIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e3,
+			},
+			InputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			OutputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			Losser:      loss.SquaredDistance{},
+			Regularizer: nil,
 		}, nil
 	}
 }

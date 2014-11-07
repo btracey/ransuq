@@ -12,6 +12,7 @@ import (
 	"strconv"
 
 	"github.com/btracey/su2tools/remove_whitespace"
+	"github.com/btracey/turbulence/sa"
 )
 
 var suWallDistance string = "WallDist"
@@ -26,6 +27,7 @@ var suDVDX string = "DU_1DX_0"
 var suDVDY string = "DU_1DX_1"
 var suDNuHatDX string = "DNuTildeDX_0"
 var suDNuHatDY string = "DNuTildeDX_1"
+var suSource string = "Residual_3"
 
 const nondimeps = 1e-8
 
@@ -303,29 +305,182 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 		InternalNames: []string{"IsInBL"},
 		Transformer:   identityFunc,
 	},
-	"SourceNondimerAlt": &FieldTransformer{
-		InternalNames: []string{"Omega", "NuHat"},
-		Transformer: func(s []float64) (float64, error) {
-			return s[0]*s[1] + 1e-6, nil // Small number hack
-		},
-	},
 	"Fw": &FieldTransformer{
 		InternalNames: []string{"Fw"},
 		Transformer:   identityFunc,
 	},
-	"OmegaBarAlt": &FieldTransformer{
-		InternalNames: []string{"OmegaNondimer", "OmegaBar", suTurbKinematicViscosity, suWallDistance, suKinematicViscosity},
+	"ChiAlt": &FieldTransformer{
+		InternalNames: []string{"Chi"},
 		Transformer: func(s []float64) (float64, error) {
-			dist := s[3]
-			dist = math.Min(dist, 1e-2)
-			nu := s[4]
-			nuhat := s[2]
-			nuhat = nuhat + 3*nu
-			omega := s[0] * s[1]
-			omegabar := omega / (nuhat / (dist * dist))
-			return omegabar, nil
+			return sa.ChiAlt(s[0]), nil
 		},
 	},
+	"NuHatAlt": &FieldTransformer{
+		InternalNames: []string{suTurbKinematicViscosity, suKinematicViscosity},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[1]
+			nuhat := s[0]
+			return sa.NuHatAlt(nu, nuhat), nil
+		},
+	},
+	"OmegaAlt": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, "OmegaBar", "OmegaNondimer"},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			omega := s[1] * s[2]
+			return sa.OmegaAlt(omega, nu), nil
+		},
+	},
+	"NondimOmegaAlt": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", "OmegaBar", suTurbKinematicViscosity, suWallDistance, suKinematicViscosity},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[4]
+			nuhat := s[2]
+			omega := s[0] * s[1]
+			dist := s[3]
+			return sa.NondimOmegaAlt(omega, nu, nuhat, dist), nil
+		},
+	},
+	"NondimOmegaAltStar": &FieldTransformer{
+		InternalNames: []string{"OmegaNondimer", "OmegaBar", suTurbKinematicViscosity, suWallDistance, suKinematicViscosity},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[4]
+			nuhat := s[2]
+			omega := s[0] * s[1]
+			dist := s[3]
+			return sa.NondimOmegaAltStar(omega, nu, nuhat, dist), nil
+		},
+	},
+	"OmegaNondimerAltStar": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.OmegaNondimerAltStar(nu, nuhat, dist), nil
+		},
+	},
+	"InvOmegaNondimerAltStar": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.InvOmegaNondimerAltStar(nu, nuhat, dist), nil
+		},
+	},
+	"OmegaAltNondimRatio": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+
+			return sa.OmegaAltNondimRatio(nu, nuhat, dist), nil
+		},
+	},
+	"LogOmegaAltNondimRatio": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+
+			return sa.LogOmegaAltNondimRatio(nu, nuhat, dist), nil
+		},
+	},
+	"SourceAltNondimRatio": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.SourceAltNondimRatio(nu, nuhat, dist), nil
+		},
+	},
+	"LogSourceAltNondimRatio": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.LogSourceAltNondimRatio(nu, nuhat, dist), nil
+		},
+	},
+	"SourceNondimerAlt": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.SourceNondimerAlt(nu, nuhat, dist), nil
+		},
+	},
+	"SourceNondimerAltStar": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.SourceNondimerAltStar(nu, nuhat, dist), nil
+		},
+	},
+	"InvSourceNondimerAltStar": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			return sa.InvSourceNondimerAltStar(nu, nuhat, dist), nil
+		},
+	},
+	"SourceAlt": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suSource},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			source := s[1]
+			return sa.SourceAlt(source, nu), nil
+		},
+	},
+	"NondimSourceAltStar": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance, suSource},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			source := s[3]
+			return sa.NondimSourceAltStar(source, nu, nuhat, dist), nil
+		},
+	},
+	"NuGradMagAlt": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, "NuHatGradNorm"},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			grad := s[1]
+			return sa.NuGradMagAlt(grad, nu), nil
+		},
+	},
+	"NondimNuGradMagAlt": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance, "NuHatGradNorm"},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			grad := s[3]
+			return sa.NondimNuGradMagAlt(grad, nu, nuhat, dist), nil
+		},
+	},
+	"NondimNuGradMagAltStar": &FieldTransformer{
+		InternalNames: []string{suKinematicViscosity, suTurbKinematicViscosity, suWallDistance, "NuHatGradNorm"},
+		Transformer: func(s []float64) (float64, error) {
+			nu := s[0]
+			nuhat := s[1]
+			dist := s[2]
+			grad := s[3]
+			return sa.NondimNuGradMagAltStar(grad, nu, nuhat, dist), nil
+		},
+	},
+
 	/*
 		"Fw": &FieldTransformer{
 			InternalNames: fullSANames,
@@ -346,6 +501,8 @@ var suMap map[string]*FieldTransformer = map[string]*FieldTransformer{
 	*/
 }
 
+var nuair = 1.48e-5
+
 var fullSANames = []string{suKinematicViscosity, suTurbKinematicViscosity, "DNuTildeDX_1", "DNuTildeDX_0", suDUDX, suDUDY, suDVDX, suDVDY, suWallDistance}
 
 // Divide to non-dimensionalize, multiply to redimensionalize
@@ -359,6 +516,14 @@ func sourcescale(nu, nuhat, omega float64) float64 {
 
 func omegascale(nu, nuhat, omega float64) float64 {
 	return sourcescale(nu, nuhat, omega) / nuscale(nu, nuhat)
+}
+
+func nuhatthresh(nu, nuhat float64) float64 {
+	return (nuhat + 3*nu) / (nuair / nu)
+}
+
+func distthresh(dist, nu float64) float64 {
+	return math.Min(dist, 100*3*nu)
 }
 
 // SU2 is a type for data from an su2_restart restart file

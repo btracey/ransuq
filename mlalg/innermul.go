@@ -159,7 +159,6 @@ type mulTrainerLossDeriver struct {
 
 func (m mulTrainerLossDeriver) Predict(parameters, featurizedInput, predOutput []float64) {
 	m.inner.Predict(parameters, featurizedInput[1:], predOutput)
-
 	for i := range predOutput {
 		predOutput[i] *= featurizedInput[0]
 	}
@@ -205,9 +204,10 @@ func (m *MulOutputScaler) SetScale(data *mat64.Dense) error {
 		sum += math.Abs(v)
 	}
 
-	//m.mulScale = sum / float64(r) // Old way that creates bad scaling
+	m.mulScale = sum / float64(r) // Old way that creates bad scaling
 	//m.mulScale = sum
-	m.mulScale = sum / math.Sqrt(float64(r))
+	//m.mulScale = sum / math.Sqrt(float64(r))
+	//fmt.Println("mul scale = ", m.mulScale)
 	m.isScaled = true
 
 	return nil

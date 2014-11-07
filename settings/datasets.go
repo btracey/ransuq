@@ -53,6 +53,9 @@ var sortedDatasets []string
 const (
 	NoDataset                    = "none"
 	NacaPressureFlat             = "naca_pressure_flat"
+	NacaPressureFlatSmall        = "naca_pressure_flat_small"
+	NacaPressureFlatMedium       = "naca_pressure_flat_medium"
+	NacaPressureFlatSmallBL      = "naca_pressure_flat_small_bl"
 	NacaPressureFlatBl           = "naca_pressure_flat_bl"
 	SingleFlatplate              = "single_flatplate"
 	SingleFlatplateBL            = "single_flatplate_bl"
@@ -87,6 +90,7 @@ const (
 	ShivajiRANS                  = "ShivajiRANS"
 	ShivajiComputed              = "ShivajiRANS_computed"
 	OneraM6                      = "oneram6"
+	OneraM6BL                    = "oneram6_bl"
 )
 
 var budgetFieldMap = map[string]string{
@@ -261,6 +265,31 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newFlatplate(5e6, -.10, "med", "atwall"),
 			newFlatplate(5e6, -.30, "med", "atwall"),
 		}
+	case NacaPressureFlatSmall:
+		datasets = []ransuq.Dataset{
+			flatplate5_06,
+			newNaca0012(3, "atwall"),
+			newFlatplate(5e6, .30, "med", "atwall"),
+			newFlatplate(5e6, -.30, "med", "atwall"),
+		}
+	case NacaPressureFlatMedium:
+		datasets = []ransuq.Dataset{
+			flatplate3_06,
+			flatplate5_06,
+			flatplate7_06,
+			newNaca0012(0, "atwall"),
+			newNaca0012(6, "atwall"),
+			newNaca0012(12, "atwall"),
+			newFlatplate(5e6, .30, "med", "atwall"),
+			newFlatplate(5e6, -.30, "med", "atwall"),
+		}
+	case NacaPressureFlatSmallBL:
+		datasets = []ransuq.Dataset{
+			flatplate5_06_BL,
+			newNaca0012(3, "justbl"),
+			newFlatplate(5e6, .30, "med", "justbl"),
+			newFlatplate(5e6, -.30, "med", "justbl"),
+		}
 	case NacaPressureFlat:
 		datasets = []ransuq.Dataset{
 			flatplate3_06,
@@ -413,7 +442,11 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		}
 	case OneraM6:
 		datasets = []ransuq.Dataset{
-			newOneraM6(),
+			newOneraM6("atwall"),
+		}
+	case OneraM6BL:
+		datasets = []ransuq.Dataset{
+			newOneraM6("justbl"),
 		}
 	case LavalDNS, LavalDNSBL, LavalDNSBLAll, LavalDNSCrop:
 		ignoreNames, ignoreFunc := GetIgnoreData(data)
@@ -603,7 +636,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	}
 }
 
-func newOneraM6() ransuq.Dataset {
+func newOneraM6(ignoreType string) ransuq.Dataset {
 	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "oneram6")
 	configName := "turb_ONERAM6.cfg"
 	mshName := "mesh_ONERAM6_turb_hexa_43008.su2"
@@ -645,12 +678,14 @@ func newOneraM6() ransuq.Dataset {
 	drive.OptionList["MlTurbModelFeatureset"] = true
 	drive.OptionList["ExtraOutput"] = true
 
+	ignoreNames, ignoreFunc := GetIgnoreData(ignoreType)
+
 	// Create an SU2 datawrapper from it
 	return &datawrapper.SU2{
 		Driver:      drive,
 		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
-		IgnoreNames: []string{"YLoc"},
-		IgnoreFunc:  func(d []float64) bool { return d[0] < wallDistIgnore },
+		IgnoreNames: ignoreNames,
+		IgnoreFunc:  ignoreFunc,
 		Name:        name,
 	}
 }
@@ -706,7 +741,7 @@ func newAirfoil() ransuq.Dataset {
 	return &datawrapper.SU2{
 		Driver:      drive,
 		Su2Caller:   driver.Serial{}, // TODO: Need to figure out how to do this better
-		IgnoreNames: []string{"YLoc"},
+		IgnoreNames: []string{"WallDistance"},
 		IgnoreFunc:  func(d []float64) bool { return d[0] < wallDistIgnore },
 		Name:        name,
 	}

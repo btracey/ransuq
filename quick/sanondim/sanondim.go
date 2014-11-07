@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"os"
@@ -58,6 +57,11 @@ var (
 	WallDistance   = findStringLocation(inputFeatures, "WallDistance")
 )
 
+var (
+	nuair = 1.48e-5
+	//nuair = 1
+)
+
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU() - 2)
 	// Set this up for a loop of datasets. Need to fix plotting places.
@@ -101,33 +105,112 @@ func main() {
 			makeHistogram(data, pltName)
 		}
 
-		tmp := make([]float64, nSamples)
-		// Plot source over nu
-		source := inputData.Col(nil, Source)
 		nu := inputData.Col(nil, Nu)
-		floats.MulTo(tmp, source, nu)
-		makeHistogram(tmp, filepath.Join(datasetPath, "sourcenu.jpg"))
-
-		nuhat := inputData.Col(nil, NuHat)
-		min, _ := floats.Min(nuhat)
-		fmt.Println("minnuhat = ", min)
-		floats.MulTo(tmp, source, nuhat)
-		makeHistogram(tmp, filepath.Join(datasetPath, "sourcenuhat.jpg"))
-
-		nuhatalt := inputData.Col(nil, NuHat)
-		for i := range nuhatalt {
-			nuhatalt[i] += 3 * nu[i]
+		nuHat := inputData.Col(nil, NuHat)
+		nuTilde := make([]float64, nSamples)
+		copy(nuTilde, nuHat)
+		for i := range nuTilde {
+			nuTilde[i] = nu[i] / nuair
 		}
-		min, _ = floats.Min(nuhatalt)
-		fmt.Println("minnuhatalt ", min)
+		makeHistogram(nuTilde, filepath.Join(datasetPath, "NuTilde.jpg"))
 
+		nuHatTilde := make([]float64, nSamples)
+		floats.DivTo(nuHatTilde, nuHat, nuTilde)
+		makeHistogram(nuHatTilde, filepath.Join(datasetPath, "NuHatTilde.jpg"))
+
+		nuHatTildeStar := make([]float64, nSamples)
+		for i := range nuHatTildeStar {
+			nuHatTildeStar[i] = nuHatTilde[i] + 3*nuair
+		}
+		makeHistogram(nuHatTildeStar, filepath.Join(datasetPath, "NuHatTildeStar.jpg"))
+		dist := inputData.Col(nil, WallDistance)
+		distStar := make([]float64, nSamples)
+		for i := range distStar {
+			distStar[i] = math.Min(dist[i], 300*nuair)
+			//distStar[i] = math.Min(, y)
+		}
+		makeHistogram(distStar, filepath.Join(datasetPath, "DistStar.jpg"))
+
+		omegaBar := inputData.Col(nil, OmegaBar)
+		omegaNondimer := inputData.Col(nil, OmegaNondimer)
 		omega := make([]float64, nSamples)
-		omeganondimer := inputData.Col(nil, OmegaNondimer)
-		omegabar := inputData.Col(nil, OmegaBar)
-		floats.MulTo(omega, omeganondimer, omegabar)
-		makeHistogram(omega, filepath.Join(datasetPath, "omega.jpg"))
+		floats.MulTo(omega, omegaBar, omegaNondimer)
+		omegaTilde := make([]float64, nSamples)
+		floats.DivTo(omegaTilde, omega, nuTilde)
+
+		makeHistogram(omegaTilde, filepath.Join(datasetPath, "OmegaTilde.jpg"))
+
+		omegaNondimerTilde := make([]float64, nSamples)
+		for i := range omegaNondimerTilde {
+			omegaNondimerTilde[i] = nuHatTildeStar[i] / (distStar[i] * distStar[i])
+		}
+		makeHistogram(omegaNondimerTilde, filepath.Join(datasetPath, "OmegaNondimerTilde.jpg"))
+
+		invOmegaNondimerTilde := make([]float64, nSamples)
+		for i := range invOmegaNondimerTilde {
+			invOmegaNondimerTilde[i] = 1 / omegaNondimerTilde[i]
+		}
+		makeHistogram(invOmegaNondimerTilde, filepath.Join(datasetPath, "InvOmegaNondimerTilde.jpg"))
+
+		nondimOmegaTilde := make([]float64, nSamples)
+		floats.DivTo(nondimOmegaTilde, omegaTilde, omegaNondimerTilde)
+
+		makeHistogram(nondimOmegaTilde, filepath.Join(datasetPath, "NondimOmegaTilde.jpg"))
+
+		source := inputData.Col(nil, Source)
+		sourceTilde := make([]float64, nSamples)
+		for i := range sourceTilde {
+			sourceTilde[i] = source[i] / (nuTilde[i] * nuTilde[i])
+		}
+		makeHistogram(sourceTilde, filepath.Join(datasetPath, "SourceTilde.jpg"))
+		sourceNondimerTilde := make([]float64, nSamples)
+		for i := range sourceNondimerTilde {
+			sourceNondimerTilde[i] = (nuHatTildeStar[i] / distStar[i]) * (nuHatTildeStar[i] / distStar[i])
+		}
+		makeHistogram(sourceTilde, filepath.Join(datasetPath, "SourceNondimerTilde.jpg"))
+		nondimSourceTilde := make([]float64, nSamples)
+		floats.DivTo(nondimSourceTilde, sourceTilde, sourceNondimerTilde)
+		makeHistogram(nondimSourceTilde, filepath.Join(datasetPath, "NondimSourceTilde.jpg"))
+
+		invSourceNondimerTilde := make([]float64, nSamples)
+		for i := range sourceNondimerTilde {
+			invSourceNondimerTilde[i] = 1 / sourceNondimerTilde[i]
+		}
+		makeHistogram(invSourceNondimerTilde, filepath.Join(datasetPath, "invSourceNondimerTilde.jpg"))
 
 		/*
+
+
+			tmp := make([]float64, nSamples)
+			// Plot source over nu
+			source := inputData.Col(nil, Source)
+			nu := inputData.Col(nil, Nu)
+			floats.MulTo(tmp, source, nu)
+			makeHistogram(tmp, filepath.Join(datasetPath, "sourcenu.jpg"))
+
+			nuhat := inputData.Col(nil, NuHat)
+			invnuhat2 := inputData.Col(nil, NuHat)
+			for i, v := range invnuhat2 {
+				invnuhat2[i] = (nuair / v) * (nuair / v)
+			}
+			min, _ := floats.Min(nuhat)
+			fmt.Println("minnuhat = ", min)
+			floats.MulTo(tmp, source, invnuhat2)
+			makeHistogram(tmp, filepath.Join(datasetPath, "sourcenuhat2.jpg"))
+
+			nuhatalt := inputData.Col(nil, NuHat)
+			for i := range nuhatalt {
+				nuhatalt[i] += 3 * nu[i]
+			}
+			min, _ = floats.Min(nuhatalt)
+			fmt.Println("minnuhatalt ", min)
+
+			omega := make([]float64, nSamples)
+			omeganondimer := inputData.Col(nil, OmegaNondimer)
+			omegabar := inputData.Col(nil, OmegaBar)
+			floats.MulTo(omega, omeganondimer, omegabar)
+			makeHistogram(omega, filepath.Join(datasetPath, "omega.jpg"))
+
 			sourceEst := make([]float64, nSamples)
 			// Compute spalart allmaras source
 			for i := 0; i < nSamples; i++ {
@@ -148,73 +231,74 @@ func main() {
 					log.Fatal("mismatch")
 				}
 			}
+
+			invNondimer := make([]float64, nSamples)
+			for i := range invNondimer {
+				invNondimer[i] = 1.0 / inputData.At(i, SourceNondimer)
+			}
+			makeHistogram(invNondimer, filepath.Join(datasetPath, "invNondimer.jpg"))
+
+			// What if we nondimensionalize by OmegaNuHat
+			nondimAlt := make([]float64, nSamples)
+			floats.MulTo(nondimAlt, omega, nuhat)
+			for i := range nondimAlt {
+				nondimAlt[i] = math.Abs(nondimAlt[i])
+			}
+			floats.AddConst(0, nondimAlt)
+			makeHistogram(nondimAlt, filepath.Join(datasetPath, "SourceNondimerAlt.jpg"))
+
+			nondimSourceAlt := make([]float64, nSamples)
+			floats.DivTo(nondimSourceAlt, source, nondimAlt)
+			makeHistogram(nondimSourceAlt, filepath.Join(datasetPath, "nondimSourceAlt.jpg"))
+			//	}(setname)
+
+			// Cap distance
+			maxDist := 100 * 3 * nu[0] // Chi = 100 is threshhold
+			altWallDist := inputData.Col(nil, WallDistance)
+			for i, v := range altWallDist {
+				altWallDist[i] = math.Min(v, maxDist)
+			}
+
+			nondimAlt2 := make([]float64, nSamples)
+			floats.DivTo(nondimAlt2, nuhat, altWallDist)
+			for i, v := range nondimAlt2 {
+				nondimAlt2[i] *= v
+			}
+			invNondimAlt2 := make([]float64, nSamples)
+			for i, v := range nondimAlt2 {
+				invNondimAlt2[i] = 1 / v
+			}
+			makeHistogram(invNondimAlt2, filepath.Join(datasetPath, "invNondimerAlt2.jpg"))
+
+			nondimAlt3 := make([]float64, nSamples)
+			floats.DivTo(nondimAlt3, nuhatalt, altWallDist)
+			for i, v := range nondimAlt3 {
+				nondimAlt3[i] *= v
+			}
+			makeHistogram(nondimAlt, filepath.Join(datasetPath, "SourceNondimerAlt3.jpg"))
+
+			invNondimAlt3 := make([]float64, nSamples)
+			for i, v := range nondimAlt3 {
+				invNondimAlt3[i] = 1 / v
+			}
+			makeHistogram(invNondimAlt3, filepath.Join(datasetPath, "invNondimerAlt3.jpg"))
+
+			nondimSourceAlt3 := make([]float64, nSamples)
+			floats.DivTo(nondimSourceAlt3, source, nondimAlt3)
+			makeHistogram(nondimSourceAlt3, filepath.Join(datasetPath, "nondimSourceAlt3.jpg"))
+
+			// Need nondim Omega3
+			omegaNondimerAlt3 := make([]float64, nSamples)
+			for i := range omegaNondimerAlt3 {
+				omegaNondimerAlt3[i] = nuhatalt[i] / (altWallDist[i] * altWallDist[i])
+			}
+			makeHistogram(omegaNondimerAlt3, filepath.Join(datasetPath, "omegaNondimerAlt3.jpg"))
+
+			omegaBarAlt3 := make([]float64, nSamples)
+			floats.DivTo(omegaBarAlt3, omega, omegaNondimerAlt3)
+			makeHistogram(omegaBarAlt3, filepath.Join(datasetPath, "OmegaBarAlt3.jpg"))
+
 		*/
-		invNondimer := make([]float64, nSamples)
-		for i := range invNondimer {
-			invNondimer[i] = 1.0 / inputData.At(i, SourceNondimer)
-		}
-		makeHistogram(invNondimer, filepath.Join(datasetPath, "invNondimer.jpg"))
-
-		// What if we nondimensionalize by OmegaNuHat
-		nondimAlt := make([]float64, nSamples)
-		floats.MulTo(nondimAlt, omega, nuhat)
-		for i := range nondimAlt {
-			nondimAlt[i] = math.Abs(nondimAlt[i])
-		}
-		floats.AddConst(0, nondimAlt)
-		makeHistogram(nondimAlt, filepath.Join(datasetPath, "SourceNondimerAlt.jpg"))
-
-		nondimSourceAlt := make([]float64, nSamples)
-		floats.DivTo(nondimSourceAlt, source, nondimAlt)
-		makeHistogram(nondimSourceAlt, filepath.Join(datasetPath, "nondimSourceAlt.jpg"))
-		//	}(setname)
-
-		// Cap distance
-		maxDist := 0.01
-		altWallDist := inputData.Col(nil, WallDistance)
-		for i, v := range altWallDist {
-			altWallDist[i] = math.Min(v, maxDist)
-		}
-
-		nondimAlt2 := make([]float64, nSamples)
-		floats.DivTo(nondimAlt2, nuhat, altWallDist)
-		for i, v := range nondimAlt2 {
-			nondimAlt2[i] *= v
-		}
-		invNondimAlt2 := make([]float64, nSamples)
-		for i, v := range nondimAlt2 {
-			invNondimAlt2[i] = 1 / v
-		}
-		makeHistogram(invNondimAlt2, filepath.Join(datasetPath, "invNondimerAlt2.jpg"))
-
-		nondimAlt3 := make([]float64, nSamples)
-		floats.DivTo(nondimAlt3, nuhatalt, altWallDist)
-		for i, v := range nondimAlt3 {
-			nondimAlt3[i] *= v
-		}
-		makeHistogram(nondimAlt, filepath.Join(datasetPath, "SourceNondimerAlt3.jpg"))
-
-		invNondimAlt3 := make([]float64, nSamples)
-		for i, v := range nondimAlt3 {
-			invNondimAlt3[i] = 1 / v
-		}
-		makeHistogram(invNondimAlt3, filepath.Join(datasetPath, "invNondimerAlt3.jpg"))
-
-		nondimSourceAlt3 := make([]float64, nSamples)
-		floats.DivTo(nondimSourceAlt3, source, nondimAlt3)
-		makeHistogram(nondimSourceAlt3, filepath.Join(datasetPath, "nondimSourceAlt3.jpg"))
-
-		// Need nondim Omega3
-		omegaNondimerAlt3 := make([]float64, nSamples)
-		for i := range omegaNondimerAlt3 {
-			omegaNondimerAlt3[i] = nuhatalt[i] / (altWallDist[i] * altWallDist[i])
-		}
-		makeHistogram(omegaNondimerAlt3, filepath.Join(datasetPath, "omegaNondimerAlt3.jpg"))
-
-		omegaBarAlt3 := make([]float64, nSamples)
-		floats.DivTo(omegaBarAlt3, omega, omegaNondimerAlt3)
-		makeHistogram(omegaBarAlt3, filepath.Join(datasetPath, "OmegaBarAlt3.jpg"))
-
 	}
 	//wg.Wait()
 }
