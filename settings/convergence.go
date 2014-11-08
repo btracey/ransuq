@@ -29,8 +29,10 @@ const (
 	HundKIter        = "100kiter"
 	MilIter          = "militer"
 
-	TrimmedTenKIter = "Trimmed10kiter"
-	TrimmedOneKIter = "Trimmed1kiter"
+	TrimmedTenIter   = "Trimmed10iter"
+	TrimmedTenKIter  = "Trimmed10kiter"
+	TrimmedOneKIter  = "Trimmed1kiter"
+	TrimmedHundKIter = "Trimmed100kiter"
 )
 
 func GetTrainer(train string, algorithm string, inputDim, outputDim int) (*ransuq.Trainer, error) {
@@ -162,12 +164,48 @@ func getTrainSettings(train string) (*ransuq.Trainer, error) {
 			Losser:       loss.SquaredDistance{},
 			Regularizer:  nil,
 		}, nil
+	case TrimmedTenIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e1,
+			},
+			InputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			OutputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			Losser:      loss.SquaredDistance{},
+			Regularizer: nil,
+		}, nil
 	case TrimmedTenKIter:
 		return &ransuq.Trainer{
 			TrainSettings: ransuq.TrainSettings{
 				ObjAbsTol:   1e-6,
 				GradAbsTol:  1e-6,
 				MaxFunEvals: 1e4,
+			},
+			InputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			OutputScaler: &scale.InnerNormal{
+				LowerQuantile: 0.05,
+				UpperQuantile: 0.95,
+			},
+			Losser:      loss.SquaredDistance{},
+			Regularizer: nil,
+		}, nil
+	case TrimmedHundKIter:
+		return &ransuq.Trainer{
+			TrainSettings: ransuq.TrainSettings{
+				ObjAbsTol:   1e-6,
+				GradAbsTol:  1e-6,
+				MaxFunEvals: 1e5,
 			},
 			InputScaler: &scale.InnerNormal{
 				LowerQuantile: 0.05,

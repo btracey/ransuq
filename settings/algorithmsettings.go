@@ -23,8 +23,8 @@ func init() {
 
 const (
 	NetOneFifty         = "net_1_50"
-	NetTwoFifty         = "net_2_25"
-	NetTwoTwentyFive    = "net_2_50"
+	NetTwoTwentyFive    = "net_2_25"
+	NetTwoFifty         = "net_2_50"
 	NetThreeFifty       = "net_3_50"
 	NetTwoHundred       = "net_2_100"
 	MulNetTwoTwentyFive = "mul_net_2_25"
