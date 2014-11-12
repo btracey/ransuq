@@ -91,6 +91,7 @@ const (
 	ShivajiComputed              = "ShivajiRANS_computed"
 	OneraM6                      = "oneram6"
 	OneraM6BL                    = "oneram6_bl"
+	LESKarthik                   = "les_karthik"
 )
 
 var budgetFieldMap = map[string]string{
@@ -479,6 +480,16 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 				IgnoreNames: ignoreNames,
 			},
 		}
+	case LESKarthik:
+		ignoreNames, ingoreFunc := GetIgnoreData("none")
+		datasets = []ransuq.Dataset{
+			&datawrapper.CSV{
+				Location:    filepath.Join(gopath, "data", "ransuq", "les_karthik", "sadatacomputed.txt"),
+				Name:        "LES_Karthik",
+				IgnoreFunc:  ingoreFunc,
+				IgnoreNames: ignoreNames,
+			},
+		}
 	}
 
 	for _, dataset := range datasets {
@@ -820,6 +831,11 @@ func GetIgnoreData(ignoreType string) (ignoreNames []string, ignoreFunc func([]f
 
 	lavalIgnoreDist := 3
 	switch ignoreType {
+	case "none":
+		ignoreNames = []string{}
+		ignoreFunc = func(d []float64) bool {
+			return false
+		}
 	case "laval_dns":
 		nX := 2304
 		nY := 385

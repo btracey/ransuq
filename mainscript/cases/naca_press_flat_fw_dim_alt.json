@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Multi Flatplate",
+		"TrainingData": "naca_pressure_flat_medium",
+		"TestingData":  "naca_pressure_flat",
+		"Algorithm":    "net_2_25",
+		"Weight":       "none",
+		"Features":     "fw_dim_alt",
+		"Convergence":  "1kiter",
+		"ExtraString":  ["none"]
+	}
+]

@@ -13,7 +13,7 @@ import (
 	"github.com/gonum/matrix/mat64"
 	"github.com/reggo/reggo/common"
 
-	myplot "github.com/btracey/plot"
+	"github.com/btracey/myplot"
 )
 
 func pltName(path, subpath, name string) string {

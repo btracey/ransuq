@@ -120,9 +120,6 @@ func (s *ScalePredictor) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("prediction didn't match stored output. Found %v, expected %v", testOutputs[i], outputs[i])
 		}
 	}
-
-	fmt.Println("ScalePredictor unmarshaled sucessfully")
-
 	return nil
 }
 

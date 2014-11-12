@@ -1,12 +1,12 @@
 [
 	{
-		"Name":         "OneraM6SDA",
-		"TrainingData": "oneram6",
+		"Name":         "LesKarthikSDA",
+		"TrainingData": "les_karthik",
 		"TestingData":  "none",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "source_dim_alt",
-		"Convergence":  "10iter",
+		"Convergence":  "10kiter",
 		"ExtraString":  ["none"]
 	}
 ]
