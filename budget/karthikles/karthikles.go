@@ -33,7 +33,7 @@ func init() {
 
 var (
 	newHeadings = []string{"Nu", "NuHat", "Chi", "Omega", "WallDistance", "NuGradMag",
-		"Source", "NuHatAlt", "OmegaAlt", "NuGradMagAlt", "SourceAlt"}
+		"Source", "NuHatAlt", "OmegaAlt", "NuGradMagAlt", "SourceAlt", "Fw"}
 
 	NuNew              = util.FindStringLocation(newHeadings, "Nu")
 	NuHatNew           = util.FindStringLocation(newHeadings, "NuHat")
@@ -46,6 +46,7 @@ var (
 	NuHatGradMagNewAlt = util.FindStringLocation(newHeadings, "NuGradMagAlt")
 	SourceNew          = util.FindStringLocation(newHeadings, "Source")
 	SourceNewAlt       = util.FindStringLocation(newHeadings, "SourceAlt")
+	FwNew              = util.FindStringLocation(newHeadings, "Fw")
 	//SourceDiffNew      = util.FindStringLocation(newHeadings, "SourceDiff")
 	//SourceDiffAltNew   = util.FindStringLocation(newHeadings, "SourceDiffAlt")
 )
@@ -102,6 +103,7 @@ func main() {
 	computedFw := make([]float64, rows)
 	omega := make([]float64, rows)
 	saSourceSub := make([]float64, 0)
+	saFwSub := make([]float64, 0)
 
 	newdata := mat64.NewDense(rows, len(headings), nil)
 
@@ -178,7 +180,9 @@ func main() {
 		newdata.Set(count, NuHatGradMagNewAlt, nuHatGradMagAlt)
 		newdata.Set(count, SourceNew, computedSource[i])
 		newdata.Set(count, SourceNewAlt, sourceAlt)
+		newdata.Set(count, FwNew, computedFw[i])
 		saSourceSub = append(saSourceSub, saSource[i])
+		saFwSub = append(saFwSub, saFw[i])
 		count++
 	}
 	newdata.View(newdata, 0, 0, count, len(newHeadings))
@@ -208,6 +212,9 @@ func main() {
 		log.Fatal(err)
 	}
 	if err = makescatter(computedFw, saFw, "fwcomp.jpg"); err != nil {
+		log.Fatal(err)
+	}
+	if err = makescatter(newdata.Col(nil, FwNew), saFwSub, "fwsubcomp.jpg"); err != nil {
 		log.Fatal(err)
 	}
 	if err = makescatter(newdata.Col(nil, SourceNew), saSourceSub, "sourcesubcomp.jpg"); err != nil {
