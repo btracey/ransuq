@@ -7,6 +7,7 @@ import (
 
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/btracey/su2tools/config/enum"
 	"github.com/btracey/su2tools/config/su2types"
@@ -55,6 +56,7 @@ const (
 	NacaPressureFlat             = "naca_pressure_flat"
 	NacaPressureFlatSmall        = "naca_pressure_flat_small"
 	NacaPressureFlatMedium       = "naca_pressure_flat_medium"
+	NacaPressureFlatMediumBL     = "naca_pressure_flat_medium_bl"
 	NacaPressureFlatSmallBL      = "naca_pressure_flat_small_bl"
 	NacaPressureFlatBl           = "naca_pressure_flat_bl"
 	SingleFlatplate              = "single_flatplate"
@@ -91,6 +93,8 @@ const (
 	ShivajiComputed              = "ShivajiRANS_computed"
 	OneraM6                      = "oneram6"
 	OneraM6BL                    = "oneram6_bl"
+	MultiOneraM6                 = "multi_oneram6"
+	OneraM6Sweep                 = "oneram6_sweep"
 	LESKarthik                   = "les_karthik"
 )
 
@@ -284,6 +288,17 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newFlatplate(5e6, .30, "med", "atwall"),
 			newFlatplate(5e6, -.30, "med", "atwall"),
 		}
+	case NacaPressureFlatMediumBL:
+		datasets = []ransuq.Dataset{
+			flatplate3_06_BL,
+			flatplate5_06_BL,
+			flatplate7_06_BL,
+			newNaca0012(0, "justbl"),
+			newNaca0012(6, "justbl"),
+			newNaca0012(12, "justbl"),
+			newFlatplate(5e6, .30, "med", "justbl"),
+			newFlatplate(5e6, -.30, "med", "justbl"),
+		}
 	case NacaPressureFlatSmallBL:
 		datasets = []ransuq.Dataset{
 			flatplate5_06_BL,
@@ -443,11 +458,25 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 		}
 	case OneraM6:
 		datasets = []ransuq.Dataset{
-			newOneraM6("atwall"),
+			newOneraM6(3.06, "atwall"),
 		}
 	case OneraM6BL:
 		datasets = []ransuq.Dataset{
-			newOneraM6("justbl"),
+			newOneraM6(3.06, "justbl"),
+		}
+	case OneraM6Sweep:
+		datasets = []ransuq.Dataset{
+			newOneraM6(3.06, "atwall"),
+			newOneraM6(2, "atwall"),
+			newOneraM6(1, "atwall"),
+			newOneraM6(0, "atwall"),
+			newOneraM6(4, "atwall"),
+		}
+	case MultiOneraM6:
+		datasets = []ransuq.Dataset{
+			newOneraM6(3.06, "atwall"),
+			newOneraM6(0, "atwall"),
+			newOneraM6(4, "atwall"),
 		}
 	case LavalDNS, LavalDNSBL, LavalDNSBLAll, LavalDNSCrop:
 		ignoreNames, ignoreFunc := GetIgnoreData(data)
@@ -647,15 +676,18 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	}
 }
 
-func newOneraM6(ignoreType string) ransuq.Dataset {
+func newOneraM6(aoa float64, ignoreType string) ransuq.Dataset {
 	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "oneram6")
 	configName := "turb_ONERAM6.cfg"
 	mshName := "mesh_ONERAM6_turb_hexa_43008.su2"
 	baseconfig := filepath.Join(basepath, "testcase", configName)
 	meshFile := filepath.Join(basepath, "testcase", mshName)
 
-	name := "OneraM6"
-	wd := filepath.Join(basepath, "OneraM6")
+	aoaString := strconv.FormatFloat(aoa, 'g', 16, 64)
+	aoaString = strings.Replace(aoaString, ".", "_", -1)
+	name := "OneraM6_" + aoaString
+
+	wd := filepath.Join(basepath, "OneraM6_"+aoaString)
 	drive := &driver.Driver{
 		Name:      name,
 		Config:    configName,
@@ -674,6 +706,8 @@ func newOneraM6(ignoreType string) ransuq.Dataset {
 	if err != nil {
 		panic(err)
 	}
+
+	drive.Options.Aoa = aoa
 
 	// set mesh file to be the base mesh file
 	relMeshName, err := filepath.Rel(wd, meshFile)

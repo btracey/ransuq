@@ -1,8 +1,8 @@
 [
 	{
 		"Name":         "OneraM6SDA",
-		"TrainingData": "oneram6",
-		"TestingData":  "oneram6",
+		"TrainingData": "multi_oneram6",
+		"TestingData":  "oneram6_sweep",
 		"Algorithm":    "net_2_50",
 		"Weight":       "none",
 		"Features":     "source_dim_alt",

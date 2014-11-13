@@ -726,7 +726,7 @@ func MakeProfilePlot(xLoc []float64, xData [][][]float64, yData [][][]float64, t
 
 		p.Legend.Top = legendTop
 		p.Legend.Left = legendLeft
-		pltName := filepath.Join(fileloc, name+"_"+xstr+".pdf")
+		pltName := filepath.Join(fileloc, name+"_"+xstr+".jpg")
 
 		_, err := os.Stat(pltName)
 		if err != nil {
