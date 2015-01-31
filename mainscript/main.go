@@ -6,18 +6,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/mlalg"
 	"github.com/btracey/ransuq/settings"
-
-	"github.com/gonum/blas/dbw"
-	"github.com/gonum/blas/goblas"
-	"github.com/gonum/matrix/mat64"
 
 	"github.com/btracey/su2tools/driver"
 
@@ -25,12 +19,12 @@ import (
 )
 
 func init() {
-	mat64.Register(goblas.Blas{})
-	dbw.Register(goblas.Blas{})
+	//	mat64.Register(goblas.Blas{})
+	//	dbw.Register(goblas.Blas{})
 	//mat64.Register(cblas.Blas{})
 	//dbw.Register(cblas.Blas{})
 
-	rand.Seed(time.Now().UnixNano())
+	//	rand.Seed(time.Now().UnixNano())
 }
 
 func main() {

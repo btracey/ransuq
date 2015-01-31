@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Multi Flatplate Fw",
+		"TrainingData": "pressure_bl",
+		"TestingData":  "naca_0012_sweep_bl",
+		"Algorithm":    "net_2_50",
+		"Weight":       "none",
+		"Features":     "fw",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	}
+]

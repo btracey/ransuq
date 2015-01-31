@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Naca Press Flat Medium BL",
+		"TrainingData": "naca_pressure_flat_medium_bl",
+		"TestingData":  "pressure_bl",
+		"Algorithm":    "mul_net_2_50",
+		"Weight":       "none",
+		"Features":     "source_alt",
+		"Convergence":  "10kiter",
+		"ExtraString":  ["BlOnly"]
+	}
+]

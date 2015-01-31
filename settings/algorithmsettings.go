@@ -23,6 +23,7 @@ func init() {
 
 const (
 	NetOneFifty         = "net_1_50"
+	NetTwoTen           = "net_2_10"
 	NetTwoTwentyFive    = "net_2_25"
 	NetTwoFifty         = "net_2_50"
 	NetThreeFifty       = "net_3_50"
@@ -53,6 +54,8 @@ func getAlgorithm(alg string, inputDim, outputDim int) (regtrain.Trainable, erro
 	switch alg {
 	case NetOneFifty:
 		return nnet.NewSimpleTrainer(inputDim, outputDim, 1, 50, nnet.Tanh{}, nnet.Linear{})
+	case NetTwoTen:
+		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 10, nnet.Tanh{}, nnet.Linear{})
 	case NetTwoTwentyFive:
 		return nnet.NewSimpleTrainer(inputDim, outputDim, 2, 25, nnet.Tanh{}, nnet.Linear{})
 	case NetTwoFifty:

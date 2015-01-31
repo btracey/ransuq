@@ -6,7 +6,7 @@
 		"Algorithm":    "mul_net_2_50",
 		"Weight":       "none",
 		"Features":     "source_alt",
-		"Convergence":  "10iter",
+		"Convergence":  "10kiter",
 		"ExtraString":  ["none"]
 	}
 ]

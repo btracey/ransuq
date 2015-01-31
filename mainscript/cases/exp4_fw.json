@@ -1,0 +1,12 @@
+[
+	{
+		"Name":         "Multi Flatplate BL Budget",
+		"TrainingData": "les4",
+		"TestingData":  "single_flatplate_bl",
+		"Algorithm":    "net_2_10",
+		"Weight":       "none",
+		"Features":     "fw_hifi_2",
+		"Convergence":  "1kiter",
+		"ExtraString":  ["BlOnly"]
+	}
+]

@@ -303,8 +303,9 @@ func (m *MulInputScaler) UnmarshalJSON(b []byte) error {
 func (m *MulInputScaler) SetScale(data *mat64.Dense) error {
 	// Get a view of the data without the first column
 	r, c := data.Dims()
-	mat := &mat64.Dense{}
-	mat.View(data, 0, 1, r, c-1)
+	//mat := &mat64.Dense{}
+	//mat.View(data, 0, 1, r, c-1)
+	mat := (data.View(0, 1, r, c-1)).(*mat64.Dense)
 
 	return m.Scaler.SetScale(mat)
 }

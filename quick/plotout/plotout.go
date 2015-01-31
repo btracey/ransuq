@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	datasetStr := "laval_dns_sa"
+	datasetStr := "laval_dns"
 
 	/*
 		nX := 2304
@@ -29,7 +29,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	inputFeatures := []string{"Chi", "NuHatGradMag", "SourceNondimerUNorm", "LogSourceNondimerUNorm", "VelVortOverNorm", "VelDetOverNorm", "NuHatGradMagUNorm", "VelNormOverNorm", "idx_x", "idx_y", "XLoc", "YLoc"}
+	inputFeatures := []string{"Chi", "NuHatGradMag", "SourceNondimerUNorm",
+		"LogSourceNondimerUNorm", "VelVortOverNorm", "VelDetOverNorm", "NuHatGradMagUNorm",
+		"VelNormOverNorm", "idx_x", "idx_y", "XLoc", "YLoc",
+	}
 	outputFeatures := []string{"NondimSourceUNorm", "Source"}
 
 	IdxX := findStringLocation(inputFeatures, "idx_x")
@@ -39,7 +42,7 @@ func main() {
 
 	inputDataMat, outputDataMat, weights, err := ransuq.DenseLoadAll(datasets, inputFeatures, outputFeatures, nil, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("error in dense load all" + err.Error())
 	}
 
 	if weights != nil {

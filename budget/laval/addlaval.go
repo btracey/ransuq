@@ -156,13 +156,15 @@ func (g gridSorter) Swap(i, j int) {
 	g[i], g[j] = g[j], g[i]
 }
 
+// This function reads in the laval data, computes budgets and other interesting
+// quantities, and writes out a new data file.
 func main() {
 	nDim := 2
 	nX := 2304
 	nY := 385
 	_ = nY
 
-	nProcs := runtime.NumCPU() - 1
+	nProcs := runtime.NumCPU() - 2
 	runtime.GOMAXPROCS(nProcs)
 	dataset := "/Users/brendan/Documents/mygo/data/ransuq/laval/laval_csv.dat"
 
@@ -173,46 +175,50 @@ func main() {
 	sort.Sort(g)
 	data = g
 
-	// Find all the neighbors of each point. Assumes structured grid.
-
+	// Find all the neighbors of each point. Assumes structured grid. gridSorter
+	// makes sure this is true
 	neighbors := make([][]int, len(data)) // Slice of neighbor coordinates
-	xStencil := 1
-	yStencil := 1
+	xStencil := 3
+	yStencil := 3
 
 	// Data is sorted, first by x then y.
 	// Ones next to equal x values are neighbors
-	// We know it's on a grid, so adding the number of x points should give the same y index
-	for i, pt := range data {
-		//fmt.Println(i)
-		for j := -xStencil; j <= xStencil; j++ {
-			if j == 0 {
-				continue
-			}
-			newIdx := i + j
-			if newIdx < 0 || newIdx >= len(data) {
-				continue
-			}
-			if pt[IdxY] == data[newIdx][IdxY] {
-				//fmt.Println("Point ", pt[IdxX], pt[IdxY], " neighbor ", data[newIdx][IdxX], data[newIdx][IdxY])
-				neighbors[i] = append(neighbors[i], newIdx)
-			}
-		}
-		for j := -yStencil; j <= yStencil; j++ {
-			if j == 0 {
-				continue
-			}
-			newIdx := i + j*nX
-			if newIdx < 0 || newIdx >= len(data) {
-				continue
-			}
-			/*
-				fmt.Println(" new IDx = ", newIdx)
-				fmt.Println("pt idxx", pt[IdxX], " new idxx", data[newIdx][IdxX])
-				fmt.Println("pt idxy", pt[IdxY], " new idxy", data[newIdx][IdxY])
-			*/
-			if pt[IdxX] == data[newIdx][IdxX] {
-				//fmt.Println("Point ", pt[IdxX], pt[IdxY], " neighbor ", data[newIdx][IdxX], data[newIdx][IdxY])
-				neighbors[i] = append(neighbors[i], newIdx)
+	// We know it's on a grid, so adding the number of x points should give
+	// the same y index
+	//for i, pt := range data {
+	for loc, pt := range data {
+		// Add all of the points in the mini-box set by xStencil and yStencil.
+		// Use all of the points in the box as a hope to get a more regularized
+		// gradient box which will smooth out second derivatives.
+		for i := -xStencil; i <= xStencil; i++ {
+			for j := -yStencil; j <= yStencil; j++ {
+				// The current location is not a neighbor of the current location
+				if i == 0 && j == 0 {
+					continue
+				}
+				// Check that the new index will be in bounds. Remember that the
+				// grid indices are 1-indexed and not zero-indexed.
+				currX := int(pt[IdxX])
+				if currX+i < 1 || currX+i > nX {
+					continue
+				}
+				currY := int(pt[IdxY])
+				if currY+j < 1 || currY+j > nY {
+					continue
+				}
+
+				// Verify that the new indicies match the expected
+				newIdx := loc + i + j*nX
+				newX := int(data[newIdx][IdxX])
+				newY := int(data[newIdx][IdxY])
+
+				if newX != currX+i {
+					panic("x idx mismatch")
+				}
+				if newY != currY+j {
+					panic("y idx mismatch")
+				}
+				neighbors[loc] = append(neighbors[loc], newIdx)
 			}
 		}
 	}
@@ -223,8 +229,8 @@ func main() {
 			log.Fatal("point has no neighbors", len(neighbors))
 		}
 		// quick check, not proof of correctness
-		if len(neighbors[i]) > (xStencil+1)*(yStencil+1) {
-			log.Fatal("point has too many neighbors", len(neighbors))
+		if len(neighbors[i]) > ((2*xStencil+1)*(2*yStencil+1) - 1) {
+			log.Fatalf("point %v has %v neighbors", i, len(neighbors[i]))
 		}
 	}
 
@@ -266,14 +272,20 @@ func main() {
 		velGrad := fluid2d.VelGrad{}
 		(&velGrad).SetAll(pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
 
+		fmt.Println("velgrad", velGrad)
+
 		sym, skewsym := velGrad.Split()
 		strainRate := fluid2d.StrainRate{sym}
 		vorticity := fluid2d.Vorticity{skewsym}
+
+		fmt.Println("sym", sym, "skewsym", skewsym)
+
 		detVel := velGrad.Det()
 		normVel := velGrad.Norm(twod.Frobenius2)
 
 		strainRateMag := strainRate.Norm(twod.Frobenius2)
 		vorticityMag := vorticity.Norm(twod.Frobenius2)
+		fmt.Println("strainmag", strainRateMag, "vortmag", vorticityMag)
 		newpt[StrainRateMag] = strainRateMag
 		newpt[VorticityMag] = vorticityMag
 		newpt[VelGradDet] = detVel

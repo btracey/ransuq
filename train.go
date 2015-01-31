@@ -211,7 +211,7 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	}
 	problem.Close()
 
-	emptyResults.FunctionEvaluations = result.FunctionEvals
+	emptyResults.FunctionEvaluations = result.FunctionEvals + result.FunctionGradientEvals
 	emptyResults.OptGradNorm = result.GradientNorm
 	emptyResults.OptObj = result.F
 	algorithm.SetParameters(result.X)

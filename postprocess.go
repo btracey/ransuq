@@ -75,7 +75,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 	pred := mat64.NewDense(nSamples, nOutputs, nil)
 	input := make([]float64, inputDim)
 	for i := 0; i < nSamples; i++ {
-		output := pred.RowView(i)
+		output := pred.RawRowView(i)
 		inputData.Row(input, i)
 
 		_, err := sp.Predict(input, output)

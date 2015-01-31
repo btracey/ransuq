@@ -62,6 +62,6 @@ func loadFromDataloader(fields []string, loader *dataloader.Dataset, ignoreNames
 		}
 		nRows++
 	}
-	data.View(data, 0, 0, nRows, nDim)
+	data = (data.View(0, 0, nRows, nDim)).(*mat64.Dense)
 	return data, nil
 }

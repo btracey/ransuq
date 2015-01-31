@@ -79,6 +79,7 @@ const (
 	MultiNaca0012                = "multi_naca_0012"
 	MultiNaca0012Bl              = "multi_naca_0012_bl"
 	Naca0012Sweep                = "naca_0012_sweep"
+	Naca0012SweepBl              = "naca_0012_sweep_bl"
 	PressureGradientMulti        = "pressure_gradient_multi"
 	PressureGradientMultiSmall   = "pressure_gradient_multi_small"
 	PressureBl                   = "pressure_bl"
@@ -197,7 +198,7 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 	case LES4:
 		datasets = []ransuq.Dataset{
 			&datawrapper.CSV{
-				Location:   filepath.Join(gopath, "data", "ransuq", "LES", "exp4.txt"),
+				Location:   filepath.Join(gopath, "data", "ransuq", "HiFi", "exp4_mod.txt"),
 				Name:       "LES_exp4",
 				IgnoreFunc: func([]float64) bool { return false },
 			},
@@ -415,6 +416,22 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 			newNaca0012(9, "justbl"),
 			newNaca0012(12, "justbl"),
 		}
+	case Naca0012SweepBl:
+		datasets = []ransuq.Dataset{
+			newNaca0012(0, "justbl"),
+			newNaca0012(1, "justbl"),
+			newNaca0012(2, "justbl"),
+			newNaca0012(3, "justbl"),
+			newNaca0012(4, "justbl"),
+			newNaca0012(5, "justbl"),
+			newNaca0012(6, "justbl"),
+			newNaca0012(7, "justbl"),
+			newNaca0012(8, "justbl"),
+			newNaca0012(9, "justbl"),
+			newNaca0012(10, "justbl"),
+			newNaca0012(11, "justbl"),
+			newNaca0012(12, "justbl"),
+		}
 	case Naca0012Sweep:
 		datasets = []ransuq.Dataset{
 			newNaca0012(0, "atwall"),
@@ -467,15 +484,15 @@ func GetDatasets(data string, caller driver.Syscaller) ([]ransuq.Dataset, error)
 	case OneraM6Sweep:
 		datasets = []ransuq.Dataset{
 			newOneraM6(3.06, "atwall"),
-			newOneraM6(2, "atwall"),
 			newOneraM6(1, "atwall"),
+			newOneraM6(2, "atwall"),
 			newOneraM6(0, "atwall"),
 			newOneraM6(4, "atwall"),
 		}
 	case MultiOneraM6:
 		datasets = []ransuq.Dataset{
-			newOneraM6(3.06, "atwall"),
 			newOneraM6(0, "atwall"),
+			newOneraM6(2, "atwall"),
 			newOneraM6(4, "atwall"),
 		}
 	case LavalDNS, LavalDNSBL, LavalDNSBLAll, LavalDNSCrop:
@@ -624,6 +641,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 	totalP := nondimensionalize.TotalPressure(pressure, drive.Options.MachNumber, gamma)
 	totalTString := strconv.FormatFloat(totalT, 'g', 16, 64)
 	totalPString := strconv.FormatFloat(totalP, 'g', 16, 64)
+
 	//pString := strconv.FormatFloat(pressure, 'g', 16, 64)
 	//drive.Options.MarkerInlet = &su2types.Inlet{"( inlet, " + totalTString + ", " + totalPString + ", 1.0, 0.0, 0.0 )"}
 	drive.Options.MarkerInlet = &su2types.Inlet{Strings: []string{"inlet", totalTString, totalPString, "1", "0", "0"}}
@@ -677,7 +695,7 @@ func newFlatplate(re float64, cp float64, fidelity string, ignoreType string) ra
 }
 
 func newOneraM6(aoa float64, ignoreType string) ransuq.Dataset {
-	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "oneram6")
+	basepath := filepath.Join(gopath, "data", "ransuq", "airfoil", "oneram6_tom")
 	configName := "turb_ONERAM6.cfg"
 	mshName := "mesh_ONERAM6_turb_hexa_43008.su2"
 	baseconfig := filepath.Join(basepath, "testcase", configName)

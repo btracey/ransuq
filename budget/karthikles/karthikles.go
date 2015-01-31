@@ -58,6 +58,8 @@ func main() {
 	//rho := 1
 	nu := 1e-3
 
+	reflen := 1 / 600.0 // Plate length
+
 	filename := filepath.Join(gopath, "data", "ransuq", "les_karthik", "sadata.txt")
 	newfilename := filepath.Join(gopath, "data", "ransuq", "les_karthik", "sadatacomputed.txt")
 	f, err := os.Open(filename)
@@ -89,7 +91,7 @@ func main() {
 	DNuHatDX := util.FindStringLocation(headings, "DMutDX")
 	DNuHatDY := util.FindStringLocation(headings, "DMutDY")
 	NuT := util.FindStringLocation(headings, "MuT")
-	XLoc := util.FindStringLocation(headings, "XLoc")
+	//XLoc := util.FindStringLocation(headings, "XLoc")
 	YLoc := util.FindStringLocation(headings, "YLoc")
 	UVel := util.FindStringLocation(headings, "UVel")
 	VVel := util.FindStringLocation(headings, "VVel")
@@ -111,7 +113,7 @@ func main() {
 	for i := 0; i < rows; i++ {
 		xidx := int(data.At(i, XIdx))
 		yidx := int(data.At(i, YIdx))
-		x := data.At(i, XLoc)
+		//x := data.At(i, XLoc)
 		y := data.At(i, YLoc)
 		delta := data.At(i, BLDelta)
 		u := data.At(i, UVel)
@@ -126,6 +128,19 @@ func main() {
 		//dNuHatDXX := data.At(i, DNuHatDXX)
 		dNuHatDYY := data.At(i, DNuHatDYY)
 		dist := data.At(i, YLoc)
+
+		// Now, let's make a transformation based on the reference length
+		dist /= reflen
+		// once because the u is larger and again because dx is smaller
+		dudx /= reflen * reflen
+		dudy /= reflen * reflen
+		dvdx /= reflen * reflen
+		dvdy /= reflen * reflen
+		dNuHatDX /= reflen
+		dNuHatDY /= reflen
+		dNuHatDYY /= reflen
+		u /= reflen
+		v /= reflen
 
 		SA := &sa.SA{
 			NDim:         2,
@@ -154,16 +169,18 @@ func main() {
 		if y > 0.7*delta || y < 1e-6 || xidx <= ignore || xidx > nX-ignore || yidx <= ignore || yidx > nY-ignore {
 			continue
 		}
-		if computedSource[i] < -0.09 {
-			fmt.Println("low source ", i)
-			fmt.Println("conv", conv)
-			fmt.Println("diff", diff)
-			fmt.Println("source =", computedSource[i])
-			fmt.Println("x =", x)
-			fmt.Println("y =", y)
-			fmt.Printf("%#v\n", SA)
-			os.Exit(1)
-		}
+		/*
+			if computedSource[i] < -0.09 {
+				fmt.Println("low source ", i)
+				fmt.Println("conv", conv)
+				fmt.Println("diff", diff)
+				fmt.Println("source =", computedSource[i])
+				fmt.Println("x =", x)
+				fmt.Println("y =", y)
+				fmt.Printf("%#v\n", SA)
+				os.Exit(1)
+			}
+		*/
 
 		nuhatalt := sa.NuHatAlt(nu, nuhat)
 		omegaalt := sa.OmegaAlt(omega[i], nu)

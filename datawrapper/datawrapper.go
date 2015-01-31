@@ -55,6 +55,13 @@ func (su *SU2) SetSyscaller(sys driver.Syscaller) {
 }
 
 func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
+	/*
+		reflength := su.ReferenceLength
+		if reflength == 0 {
+			reflength = 1
+		}
+	*/
+
 	// Construct a dataloader
 	loader := &dataloader.Dataset{
 		Name:     su.Driver.Name,
@@ -90,7 +97,7 @@ func (su *SU2) Load(fields []string) (common.RowMatrix, error) {
 		}
 		nRows++
 	}
-	data.View(data, 0, 0, nRows, nDim)
+	data = (data.View(0, 0, nRows, nDim)).(*mat64.Dense)
 	return data, nil
 }
 

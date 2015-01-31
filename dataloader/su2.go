@@ -527,10 +527,13 @@ func distthresh(dist, nu float64) float64 {
 }
 
 // SU2 is a type for data from an su2_restart restart file
-type SU2_restart_2dturb struct{}
+type SU2_restart_2dturb struct {
+	ReferenceLength float64
+}
 
 // Fieldmap specifies which dataset fieldnames are needed to get that fieldname
 func (s *SU2_restart_2dturb) Fieldmap(fieldname string) *FieldTransformer {
+	// Here is where to put in length scale
 	return suMap[fieldname]
 }
 
