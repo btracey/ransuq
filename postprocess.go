@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"sync"
 
-	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/plotter"
-	"code.google.com/p/plotinum/vg"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/vg"
+	"github.com/gonum/plot/vg/draw"
 
 	"github.com/gonum/matrix/mat64"
 	"github.com/reggo/reggo/common"
@@ -22,7 +23,6 @@ func pltName(path, subpath, name string) string {
 
 // path is the path to where the files should be stored
 func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, inputNames []string, outputNames []string, path string) error {
-
 	nSamples, inputDim := inputData.Dims()
 	nOutputs := len(outputNames)
 
@@ -84,7 +84,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 		}
 	}
 
-	pltMul := 4.0
+	pltMul := vg.Length(4.0)
 
 	err := os.MkdirAll(path, 0700)
 	if err != nil {
@@ -106,7 +106,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 			return err
 		}
 		p.Add(h)
-		err = p.Save(4*pltMul, 4*pltMul, filepath.Join(path, name))
+		err = p.Save(4*vg.Inch*pltMul, 4*vg.Inch*pltMul, filepath.Join(path, name))
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 			return err
 		}
 		p.Add(h)
-		err = p.Save(4*pltMul, 4*pltMul, filepath.Join(path, name))
+		err = p.Save(4*vg.Inch*pltMul, 4*vg.Inch*pltMul, filepath.Join(path, name))
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 		plt.Y.Label.Text = "Predicted value of " + name
 		plt.Title.Text = "Prediction vs. Truth for " + name
 
-		err = plt.Save(4*pltMul, 4*pltMul, direct)
+		err = plt.Save(4*vg.Inch*pltMul, 4*vg.Inch*pltMul, direct)
 		fmt.Println("filename", direct)
 		fmt.Println(err)
 		if err != nil {
@@ -206,7 +206,7 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 
 		// TODO: Save the data used to make the plot
 
-		err = errPlt.Save(4*pltMul, 4*pltMul, indirect)
+		err = errPlt.Save(4*vg.Inch*pltMul, 4*vg.Inch*pltMul, indirect)
 		if err != nil {
 			fmt.Println("Error saving errPLts")
 			return err
@@ -254,18 +254,18 @@ func makeComparisons(inputData, outputData common.RowMatrix, sp ScalePredictor, 
 				return err
 			}
 
-			scatErr.GlyphStyle.Radius = vg.Centimeters(0.01 * pltMul)
-			scatErr.GlyphStyle.Shape = plot.CircleGlyph{}
+			scatErr.GlyphStyle.Radius = 0.01 * pltMul * vg.Centimeter
+			scatErr.GlyphStyle.Shape = draw.CircleGlyph{}
 			conErrPlt.Add(scatErr)
-			err = conErrPlt.Save(4*pltMul, 4*pltMul, contourErr)
+			err = conErrPlt.Save(4*vg.Inch*pltMul, 4*vg.Inch*pltMul, contourErr)
 			if err != nil {
 				return err
 			}
 
-			scatFun.GlyphStyle.Radius = vg.Centimeters(0.01 * pltMul)
-			scatFun.GlyphStyle.Shape = plot.CircleGlyph{}
+			scatFun.GlyphStyle.Radius = 0.01 * pltMul * vg.Centimeter
+			scatFun.GlyphStyle.Shape = draw.CircleGlyph{}
 			conFunPlt.Add(scatFun)
-			err = conFunPlt.Save(4*pltMul, 4*pltMul, contourFun)
+			err = conFunPlt.Save(4*vg.Inch*pltMul, 4*vg.Inch*pltMul, contourFun)
 			if err != nil {
 				return err
 			}
@@ -315,10 +315,14 @@ func postprocess(sp ScalePredictor, settings *Settings) error {
 			inputs, outputs, _, err := LoadData(settings.TestingData[i], DenseLoad, settings.InputFeatures, settings.OutputFeatures, nil)
 			if err != nil {
 				testingErr[i] = err
+				fmt.Println("testing error loading: ", err)
 				return
 			}
 			savepath := filepath.Join(basepath, settings.TestingData[i].ID())
 			testingErr[i] = makeComparisons(inputs, outputs, sp, settings.InputFeatures, settings.OutputFeatures, savepath)
+			if testingErr[i] != nil {
+				fmt.Println("testing postprocess error: ", i, err)
+			}
 		}(i)
 	}
 	wg.Wait()

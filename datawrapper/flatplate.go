@@ -15,8 +15,8 @@ import (
 
 	"github.com/btracey/su2tools/driver"
 
-	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/plotter"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
 )
 
 var _ = fmt.Println

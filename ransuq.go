@@ -326,9 +326,11 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 			comp, ok := test.(Comparable)
 
 			if !ok {
+				fmt.Println("Case skipped")
 				skipped++
 				continue
 			}
+
 			// If it is, set it up and send it
 			outLoc := filepath.Join(testDone.Settings.Savepath, "comparison")
 			algFile := PredictorFilename(testDone.Settings.Savepath)
@@ -348,6 +350,7 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 			// This will be read in below in the loop over data
 			go func() { g.In <- gen }()
 		}
+		fmt.Println("skipped =", skipped)
 
 		postprocessWg := &sync.WaitGroup{}
 		for i := skipped; i < len(mlRun.Settings.TestingData); i++ {
@@ -375,9 +378,13 @@ func runPostprocessing(scheduler Scheduler, mlRun *mlRunData, testDone *learner,
 					err := p.PostProcess()
 					fmt.Println("Done postprocessing")
 					if err != nil {
+						fmt.Println("gen postprocess err", i, err)
 						testDone.comparisonErrs[i] = err
 					}
+				} else {
+					fmt.Println(i, " is not a postprocessor")
 				}
+				fmt.Println("Done generatable ", i)
 				postprocessWg.Done()
 			}(i)
 		}

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"runtime"
 
@@ -188,31 +189,45 @@ func (t *Trainer) Train(inputs, outputs common.RowMatrix, weights []float64) (Pr
 	fmt.Println("losser is ", losser)
 
 	// Create the trainer
-	problem := &regtrain.GradOptimizable{
+	/*
+		problem := &regtrain.GradOptimizable{
+			Trainable: algorithm,
+			Inputs:    inputs,
+			Outputs:   outputs,
+			Weights:   weights,
+
+			NumWorkers:  runtime.GOMAXPROCS(0),
+			Losser:      losser,
+			Regularizer: regularizer,
+		}
+	*/
+
+	problem := &regtrain.BatchGradient{
 		Trainable: algorithm,
 		Inputs:    inputs,
 		Outputs:   outputs,
 		Weights:   weights,
 
-		NumWorkers:  runtime.GOMAXPROCS(0),
+		Workers:     runtime.GOMAXPROCS(0),
 		Losser:      losser,
 		Regularizer: regularizer,
 	}
 
 	settings := optimize.DefaultSettings()
-	settings.FunctionEvals = t.TrainSettings.MaxFunEvals
-	settings.GradientAbsTol = t.TrainSettings.GradAbsTol
-	settings.FunctionAbsTol = t.TrainSettings.ObjAbsTol
+	settings.FuncEvaluations = t.TrainSettings.MaxFunEvals
+	settings.GradientThreshold = t.TrainSettings.GradAbsTol
+	settings.FunctionThreshold = t.TrainSettings.ObjAbsTol
 
 	problem.Init()
 	result, err := optimize.Local(problem, param, settings, nil)
 	if err != nil {
 		return nil, emptyResults, err
 	}
-	problem.Close()
+	//problem.Close()
 
-	emptyResults.FunctionEvaluations = result.FunctionEvals + result.FunctionGradientEvals
-	emptyResults.OptGradNorm = result.GradientNorm
+	//emptyResults.FunctionEvaluations = result.FunctionEvals + result.FunctionGradientEvals
+	emptyResults.FunctionEvaluations = result.FuncEvaluations
+	emptyResults.OptGradNorm = floats.Norm(result.Gradient, math.Inf(1))
 	emptyResults.OptObj = result.F
 	algorithm.SetParameters(result.X)
 

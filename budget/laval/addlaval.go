@@ -32,7 +32,7 @@ const (
 
 var features = []string{"idx_x", "idx_y", "grid_x", "grid_yx", "DUDX", "DUDY",
 	"DVDX", "DVDY", "TauUU", "TauUV", "TauVV", "Nu", "WallDistance", "UVel", "VVel",
-	"DissUU", "DissUV", "DissVV"}
+	"DissUU", "DissUV", "DissVV", "Pressure", "DPDX", "DPDY"}
 
 var (
 	IdxX         = findStringLocation(features, "idx_x")
@@ -53,6 +53,9 @@ var (
 	DissUU       = findStringLocation(features, "DissUU")
 	DissUV       = findStringLocation(features, "DissUV")
 	DissVV       = findStringLocation(features, "DissVV")
+	Pressure     = findStringLocation(features, "Pressure")
+	DPDX         = findStringLocation(features, "DPDX")
+	DPDY         = findStringLocation(features, "DPDY")
 )
 
 var newFeatures = []string{
@@ -66,6 +69,15 @@ var newFeatures = []string{
 	"TurbKinEnergySourceBudget", "TurbSpecificDissipationSourceBudget",
 	"TurbKinEnergySourceNondimer", "NondimTurbKinEnergySource", "TurbSpecificDissipationSourceNondimer",
 	"NondimTurbSpecificDissipationSource",
+}
+
+// what features of the neighbor should be included in the feature set.
+var neighborFeatures = []string{
+	"DeltaXLoc", "DeltaYLoc", "DUDX", "DUDY", "DVDX", "DVDY", "UVel", "VVel", "Pressure", "DPDX", "DPDY",
+}
+
+var thisLocationFeatures = []string{
+	"idx_x", "idx_y", "grid_x", "grid_yx", "NuTilde", "DNuHatDX", "DNuHatDY", "DUDX", "DUDY", "DVDX", "DVDY", "UVel", "VVel", "Pressure", "DPDX", "DPDY", "Source",
 }
 
 var (
@@ -178,8 +190,8 @@ func main() {
 	// Find all the neighbors of each point. Assumes structured grid. gridSorter
 	// makes sure this is true
 	neighbors := make([][]int, len(data)) // Slice of neighbor coordinates
-	xStencil := 3
-	yStencil := 3
+	xStencil := 2
+	yStencil := 2
 
 	// Data is sorted, first by x then y.
 	// Ones next to equal x values are neighbors
@@ -272,20 +284,20 @@ func main() {
 		velGrad := fluid2d.VelGrad{}
 		(&velGrad).SetAll(pt[DUDX], pt[DUDY], pt[DVDX], pt[DVDY])
 
-		fmt.Println("velgrad", velGrad)
+		//fmt.Println("velgrad", velGrad)
 
 		sym, skewsym := velGrad.Split()
 		strainRate := fluid2d.StrainRate{sym}
 		vorticity := fluid2d.Vorticity{skewsym}
 
-		fmt.Println("sym", sym, "skewsym", skewsym)
+		//fmt.Println("sym", sym, "skewsym", skewsym)
 
 		detVel := velGrad.Det()
 		normVel := velGrad.Norm(twod.Frobenius2)
 
 		strainRateMag := strainRate.Norm(twod.Frobenius2)
 		vorticityMag := vorticity.Norm(twod.Frobenius2)
-		fmt.Println("strainmag", strainRateMag, "vortmag", vorticityMag)
+		//fmt.Println("strainmag", strainRateMag, "vortmag", vorticityMag)
 		newpt[StrainRateMag] = strainRateMag
 		newpt[VorticityMag] = vorticityMag
 		newpt[VelGradDet] = detVel
@@ -783,39 +795,126 @@ func main() {
 	w := numcsv.NewWriter(f2)
 	w.FloatFmt = 'g'
 
-	err = appendCSV(r, newFeatures, newData, w)
+	err, allHeadings, allData := appendCSV(r, newFeatures, newData, w)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("Finished")
+	fmt.Println(len(allHeadings))
+	ra, ca := allData.Dims()
+	fmt.Println(ra, ca)
+
+	// Construct an ML dataset with one feature per column
+
+	// Ignore all of the points without the maximum number of neighbors
+	var maxNeighbors int
+	for i := range neighbors {
+		if len(neighbors[i]) > maxNeighbors {
+			maxNeighbors = len(neighbors[i])
+		}
+	}
+
+	mldata := make([][]float64, 0, ra)
+	mlHeadings := make([]string, 0)
+	var headingAdded bool
+	for i := 0; i < ra; i++ {
+		if len(neighbors[i]) != maxNeighbors {
+			// Ignore the points that don't have a sufficient number of neighbors
+			continue
+		}
+		d := make([]float64, 0)
+		// Append the data at this location
+		for _, str := range thisLocationFeatures {
+			var v float64
+			if idx := findStringLocation(features, str); idx != -1 {
+				v = data[i][idx]
+			} else if idx := findStringLocation(newFeatures, str); idx != -1 {
+				v = newData[i][idx]
+			} else {
+				panic("Didn't find str " + str)
+			}
+			d = append(d, v)
+			if !headingAdded {
+				mlHeadings = append(mlHeadings, "this_"+str)
+			}
+		}
+		var neighborCount int
+		for _, neighborIdx := range neighbors[i] {
+			neighborCount++
+			for _, str := range neighborFeatures {
+				var v float64
+				if idx := findStringLocation(features, str); idx != -1 {
+					v = data[neighborIdx][idx]
+				} else if idx := findStringLocation(newFeatures, str); idx != -1 {
+					v = newData[neighborIdx][idx]
+				} else if str == "DeltaXLoc" {
+					v = data[i][XLoc] - data[neighborIdx][XLoc]
+				} else if str == "DeltaYLoc" {
+					v = data[i][YLoc] - data[neighborIdx][YLoc]
+				} else {
+					panic("Didn't find str " + str)
+				}
+				d = append(d, v)
+				if !headingAdded {
+					fstr := fmt.Sprintf("neighbor_%v_%v", neighborCount, str)
+					mlHeadings = append(mlHeadings, fstr)
+				}
+			}
+		}
+		mldata = append(mldata, d)
+		headingAdded = true
+	}
+	rml := len(mldata)
+	cml := len(mldata[0])
+	if len(mlHeadings) != cml {
+		panic("wrong number of headings")
+	}
+	mlMatrix := mat64.NewDense(rml, cml, nil)
+	for i := 0; i < rml; i++ {
+		for j := 0; j < cml; j++ {
+			mlMatrix.Set(i, j, mldata[i][j])
+		}
+	}
+
+	setname := pre + "_mldata_withloc" + ext
+	fml, err := os.Create(setname)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("mlheadings = ", mlHeadings)
+	w = numcsv.NewWriter(fml)
+	err = w.WriteAll(mlHeadings, mlMatrix)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func appendCSV(r *numcsv.Reader, newHeadings []string, newData [][]float64, w *numcsv.Writer) error {
+func appendCSV(r *numcsv.Reader, newHeadings []string, newData [][]float64, w *numcsv.Writer) (err error, allheadings []string, alldata *mat64.Dense) {
 	// Read all of the headings
 	headings, err := r.ReadHeading()
 	if err != nil {
-		return err
+		return err, nil, nil
 	}
 	data, err := r.ReadAll()
 	if err != nil {
-		return err
+		return err, nil, nil
 	}
 
 	rows, cols := data.Dims()
 
 	if len(newData) != rows {
-		return errors.New("nData mismatch")
+		return errors.New("nData mismatch"), nil, nil
 	}
 	dim := len(newData[0])
 	for _, pt := range newData {
 		if len(pt) != dim {
-			return errors.New("dim mismatch")
+			return errors.New("dim mismatch"), nil, nil
 		}
 	}
 	if len(newHeadings) != dim {
 		fmt.Println(newHeadings)
 		fmt.Println(dim)
-		return errors.New("Heading length mismatch")
+		return errors.New("Heading length mismatch"), nil, nil
 	}
 
 	// Append the extra data
@@ -828,7 +927,7 @@ func appendCSV(r *numcsv.Reader, newHeadings []string, newData [][]float64, w *n
 	}
 	headings = append(headings, newHeadings...)
 
-	return w.WriteAll(headings, m)
+	return w.WriteAll(headings, m), headings, m
 
 }
 

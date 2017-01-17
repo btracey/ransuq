@@ -13,8 +13,9 @@ import (
 	"strconv"
 	"strings"
 
-	"code.google.com/p/plotinum/plot"
-	"code.google.com/p/plotinum/plotter"
+	"github.com/gonum/plot"
+	"github.com/gonum/plot/plotter"
+	"github.com/gonum/plot/vg"
 
 	"github.com/btracey/ransuq"
 	"github.com/btracey/ransuq/dataloader"
@@ -298,6 +299,7 @@ func (FlatplatePostprocessor) PostProcess(su *SU2ML) error {
 type AirfoilPostprocessor struct{}
 
 func (AirfoilPostprocessor) PostProcess(su *SU2ML) error {
+	fmt.Println("in airfoil postprocess")
 	// Make a Cf plot comparing the ml and the original
 	err := makeCfPlot(su.OrigDriver, su.SU2.Driver, su.PostprocessDir)
 	if err != nil {
@@ -326,6 +328,8 @@ func makeCfPlot(orig, ml *driver.Driver, postprocessdir string) error {
 	origSurfFilename += ".csv"
 	newSurfFilename += ".csv"
 
+	fmt.Println("loading orig surf")
+
 	origSurf, err := os.Open(origSurfFilename)
 	defer origSurf.Close()
 	if err != nil {
@@ -338,26 +342,26 @@ func makeCfPlot(orig, ml *driver.Driver, postprocessdir string) error {
 		return err
 	}
 
-	oldCfs, err := readCfInfo(origSurf)
+	oldXs, oldCfs, err := readCfInfo(origSurf)
 	if err != nil {
 		panic(err)
 	}
-	newCfs, err := readCfInfo(newSurf)
+	newXs, newCfs, err := readCfInfo(newSurf)
 	if err != nil {
 		panic(err)
 	}
-
-	return plotCfs(oldCfs, newCfs, filename)
+	return plotCfs(oldXs, newXs, oldCfs, newCfs, filename)
 }
 
-func plotCfs(oldCfs, newCfs []float64, filename string) error {
+func plotCfs(oldXs, newXs, oldCfs, newCfs []float64, filename string) error {
 	// Get the points
 	oldPts := make(plotter.XYs, len(oldCfs))
 	newPts := make(plotter.XYs, len(newCfs))
+	// NACA 0012 surface points go from back to front, so need to adjust
 	for i := range oldCfs {
-		oldPts[i].X = float64(i) / float64(len(oldCfs))
+		oldPts[i].X = oldXs[i]
 		oldPts[i].Y = oldCfs[i]
-		newPts[i].X = float64(i) / float64(len(oldCfs))
+		newPts[i].X = newXs[i]
 		newPts[i].Y = newCfs[i]
 	}
 
@@ -400,22 +404,22 @@ func plotCfs(oldCfs, newCfs []float64, filename string) error {
 	p.Legend.Add("True", trueScatter)
 	p.Legend.Add("ML", mlScatter)
 	p.Legend.Top = true
-	p.Legend.Left = true
+	p.Legend.Left = false
 
-	if err := p.Save(4, 4, filename); err != nil {
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, filename); err != nil {
 		return err
 	}
 	return nil
 }
 
-func readCfInfo(r io.Reader) ([]float64, error) {
+func readCfInfo(r io.Reader) ([]float64, []float64, error) {
 	cr := csv.NewReader(r)
 	cr.LazyQuotes = true
 	records, err := cr.ReadAll()
 	if err != nil {
 		fmt.Println("error reading all")
 		panic(err)
-		return nil, err
+		return nil, nil, err
 	}
 	// Search the first record for the skin friction coefficient
 	idx := -1
@@ -429,17 +433,38 @@ func readCfInfo(r io.Reader) ([]float64, error) {
 		}
 	}
 	if idx == -1 {
-		return nil, errors.New("cf not found")
+		return nil, nil, errors.New("cf not found")
 	}
+
+	xidx := -1
+	for i, s := range records[0] {
+		s = strings.TrimSpace(s)
+		s = strings.TrimPrefix(s, "\"")
+		s = strings.TrimSuffix(s, "\"")
+		if s == "x_coord" {
+			xidx = i
+		}
+	}
+	if xidx == -1 {
+		return nil, nil, errors.New("x_coord not found")
+	}
+
 	// Now, extract all of them in order
 	cfs := make([]float64, len(records[1:]))
+	xs := make([]float64, len(records[1:]))
 	for i, v := range records[1:] {
 		s := v[idx]
 		s = strings.TrimSpace(s)
 		cfs[i], err = strconv.ParseFloat(s, 64)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+		s = v[xidx]
+		s = strings.TrimSpace(s)
+		xs[i], err = strconv.ParseFloat(s, 64)
+		if err != nil {
+			return nil, nil, err
 		}
 	}
-	return cfs, nil
+	return xs, cfs, nil
 }
